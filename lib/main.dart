@@ -3,7 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-
+import 'package:resqmob/backend/firebase%20config/Authentication.dart';
+import 'package:resqmob/pages/authentication/login.dart';
 import 'backend/firebase config/firebase_options.dart';
 
 void main() async {
@@ -26,7 +27,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+     // home: const MyHomePage(),
+      home: login(),
     );
   }
 }
@@ -149,6 +151,14 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: (){
+              Authentication().signout(context);
+            },
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: Stack(
         children: [
