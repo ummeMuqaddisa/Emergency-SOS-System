@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:resqmob/pages/authentication/signup.dart';
 import '../../Class Models/user.dart';
@@ -34,18 +37,18 @@ class _loginState extends State<login> {
       print("success");
       print(FirebaseAuth.instance.currentUser);
 
-      // //fcm token update
-      // if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
-      //   final fcmToken = await FirebaseMessaging.instance.getToken();
-      //   if (fcmToken != null) {
-      //     await FirebaseFirestore.instance
-      //         .collection('Users')
-      //         .doc(user!.uid)
-      //         .update({
-      //       'fcmToken': fcmToken,
-      //     });
-      //   }
-      // }
+      //fcm token update
+      if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(user!.uid)
+              .update({
+            'fcmToken': fcmToken,
+          });
+        }
+      }
 
       final data=await FirebaseFirestore.instance.collection("Users").doc(user!.uid).get();
       UserModel cuser=UserModel.fromJson((data).data()!);

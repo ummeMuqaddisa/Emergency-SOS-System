@@ -16,6 +16,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+
+        // for firebase message
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -32,6 +35,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
+
         // 🔑 API key placeholder for AndroidManifest.xml
         manifestPlaceholders["MAPS_API_KEY"] = project.findProperty("MAPS_API_KEY") ?: ""
     }
@@ -47,4 +51,14 @@ android {
 
 flutter {
     source = "../.."
+}
+
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.9.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // Flutter plugins and other dependencies will go here
 }

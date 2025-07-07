@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,17 @@ class signup extends StatefulWidget {
 }
 
 class _signupState extends State<signup> {
+  @override
+  @override
+  void initState() {
+    // TODO: implement initState
+    printFcmToken();
+    super.initState();
+  }
+  void printFcmToken() async {
+    String? token = await FirebaseMessaging.instance.getToken();
+    print("🔑 FCM Token: $token");
+  }
   String btn_text = "Sign Up";
   File? image;
   String path = "";

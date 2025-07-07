@@ -1,17 +1,38 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:resqmob/backend/firebase%20config/Authentication.dart';
 import 'package:resqmob/pages/authentication/login.dart';
+import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
+
+
+
+bool get isSkiaWeb => kIsWeb;
+
+@pragma('vm:entry-point')
+Future<void> handleBackgroundMessage(RemoteMessage message) async {
+  print('Background message received: ${message.notification?.title}');
+}
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  final firebaseApi = FirebaseApi();
+  if (!isSkiaWeb && !(Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
+    await firebaseApi.initNotifications();
+  }
   runApp(const MyApp());
 }
 
