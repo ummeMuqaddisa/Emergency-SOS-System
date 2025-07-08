@@ -5,10 +5,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:resqmob/pages/authentication/signup.dart';
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import '../../main.dart';
+import '../homepage.dart';
 
 class login extends StatefulWidget {
   const login({super.key});
@@ -48,6 +50,35 @@ class _loginState extends State<login> {
             'fcmToken': fcmToken,
           });
         }
+      }
+
+      // Get current location
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+
+        await FirebaseFirestore.instance
+            .collection("Users")
+            .doc(user!.uid)
+            .update({
+          'location': {
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+            'timestamp': DateTime.now().toIso8601String(),
+          }
+        });
       }
 
       final data=await FirebaseFirestore.instance.collection("Users").doc(user!.uid).get();

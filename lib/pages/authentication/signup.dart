@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
@@ -68,13 +69,25 @@ class _signupState extends State<signup> {
         url = await FirebaseStorage.instance.ref(path).getDownloadURL();
       }
 
-      UserModel newUser = UserModel(
-          id: credential.user!.uid,
-          name: name.text,
-          admin: false,
-          email: email.text,
-          profileImageUrl: url
+      // Get user location
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
       );
+
+      // Create user model with location
+      UserModel newUser = UserModel(
+        id: credential.user!.uid,
+        name: name.text,
+        admin: false,
+        email: email.text,
+        profileImageUrl: url,
+        location: {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'timestamp': Timestamp.now(),
+        },
+      );
+
 
       await FirebaseFirestore.instance
           .collection("Users")

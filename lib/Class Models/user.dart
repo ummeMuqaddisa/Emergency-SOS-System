@@ -8,6 +8,7 @@ class UserModel {
   DateTime createdAt;
   String token;
   bool admin;
+  Map<String, dynamic>? location;
 
   UserModel({
     required this.id,
@@ -18,6 +19,7 @@ class UserModel {
     this.phoneNumber = '',
     this.address = '',
     this.token = '',
+    this.location,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -32,6 +34,7 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'address': address,
       'token': token,
+      'location': location,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -50,6 +53,7 @@ class UserModel {
       address: json['address'] ?? '',
       token: json['token'] ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      location: json['location'] != null ? Map<String, dynamic>.from(json['location']) : null,
     );
   }
 
