@@ -9,6 +9,7 @@ import 'package:resqmob/pages/authentication/login.dart';
 import 'package:resqmob/pages/homepage.dart';
 import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
+import 'modules/heatmap.dart';
 
 
 
@@ -31,6 +32,11 @@ void main() async {
     FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
     await firebaseApi.initNotifications();
   }
+  if (kIsWeb) {
+    await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    await FirebaseMessaging.instance.getToken(vapidKey: "BLwCHwZWPFgo5l5EpYdly8u2Fv0kxwVnTw1e3r5Fx21zbkFs5TapD369ibH1FQoa7mKbR-CyzfOHi0oQW2_OPR0");
+  }
+
   runApp(const MyApp());
 }
 

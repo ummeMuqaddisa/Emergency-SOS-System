@@ -43,6 +43,7 @@ class _loginState extends State<login> {
       if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
         final fcmToken = await FirebaseMessaging.instance.getToken();
         if (fcmToken != null) {
+          print(fcmToken);
           await FirebaseFirestore.instance
               .collection('Users')
               .doc(user!.uid)

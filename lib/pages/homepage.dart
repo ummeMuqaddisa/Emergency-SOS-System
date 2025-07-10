@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/backend/firebase%20config/firebase%20message.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 
@@ -27,6 +30,18 @@ class _MyHomePageState extends State<MyHomePage> {
   Position? _currentPosition;
   bool _isLoading = false;
   final Set<Marker> _markers = {}; // Holds all markers for the map
+  StreamSubscription<Position>? _positionStream;
+  void animateTo(Position position) {
+    if (_mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(position.latitude, position.longitude),
+        ),
+      );
+    }
+  }
+
+
 
   @override
   void initState() {
@@ -43,6 +58,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
         _showNotificationDialog(title, body, data);
       }
+    });
+
+
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 0,
+      ),
+    ).listen((Position pos) {
+      animateTo(pos);
+      setState(() {
+        _currentPosition = pos;
+      });
     });
   }
 
@@ -112,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _markers.addAll(loadedMarkers); // Assuming _markers is your Set<Marker>
       });
-      print("done");
+      print("user load done");
       print("-----------------------------------");
     } catch (e) {
       debugPrint('Error loading user markers: $e');
@@ -141,6 +169,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
       // Move camera to current location
       _mapController?.animateCamera(
+       // position: LatLng(position.latitude, position.longitude),
+        duration: Duration(milliseconds: 1),
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(position.latitude, position.longitude),
@@ -156,6 +186,31 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _fitMarkersInView() {
+    if (_markers.isEmpty || _mapController == null) return;
+
+    double minLat = _markers.first.position.latitude;
+    double maxLat = _markers.first.position.latitude;
+    double minLng = _markers.first.position.longitude;
+    double maxLng = _markers.first.position.longitude;
+
+    for (Marker marker in _markers) {
+      minLat = minLat < marker.position.latitude ? minLat : marker.position.latitude;
+      maxLat = maxLat > marker.position.latitude ? maxLat : marker.position.latitude;
+      minLng = minLng < marker.position.longitude ? minLng : marker.position.longitude;
+      maxLng = maxLng > marker.position.longitude ? maxLng : marker.position.longitude;
+    }
+
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        100.0, // padding
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +241,7 @@ class _MyHomePageState extends State<MyHomePage> {
             myLocationButtonEnabled: true,
             compassEnabled: true,
             mapToolbarEnabled: true,
-            zoomControlsEnabled: true,
+            zoomControlsEnabled: false,
             markers: _markers, // Pass the entire set of markers to the map
           ),
           if (_isLoading)
@@ -195,10 +250,30 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _getCurrentLocation,
-        tooltip: 'Get Current Location',
-        child: const Icon(Icons.my_location),
+      // Floating action button to toggle view
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: "toggle",
+            onPressed: _getCurrentLocation,
+            backgroundColor:  Colors.blue,
+            child: Icon(
+               Icons.whatshot,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: "center",
+            onPressed: _fitMarkersInView,
+            backgroundColor: Colors.green,
+            child: const Icon(
+              Icons.center_focus_strong,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
             bottomNavigationBar: BottomNavigationBar(
         items: [
@@ -222,29 +297,30 @@ class _MyHomePageState extends State<MyHomePage> {
             label: 'Find',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.not_interested_sharp),
-            label: '',
+
+            icon: Icon(Icons.sms_outlined),
+            label: 'sms',
           ),
 
         ],
         currentIndex: 1,
         onTap: (index) async{
           try {
-          final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-          for (var doc in querySnapshot.docs) {
-            final data = doc.data();
-
-            final fcm=data['fcmToken'];
-            final currentuser=FirebaseAuth.instance.currentUser!.uid;
-            if(currentuser!=doc.id){
-              FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
-            }
-
+          // final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+          // for (var doc in querySnapshot.docs) {
+          //   final data = doc.data();
           //
-
-          }
-
-
+          //   final fcm=data['fcmToken'];
+          //   final currentuser=FirebaseAuth.instance.currentUser!.uid;
+          //   if(currentuser!=doc.id){
+          //   //  FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
+          //   }
+          //
+          // //
+          //
+          // }
+          //
+          sendSos(phone: '+8801839228924', name: "XhAfAn", lat: 23.76922413394876, lng:90.42557442785835 );
           print("done");
           print("-----------------------------------");
         } catch (e) {

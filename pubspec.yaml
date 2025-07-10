@@ -53,6 +53,13 @@ dependencies:
   flutter_polyline_points: ^2.1.0
 
 
+
+
+  flutter_map: ^6.0.0
+  flutter_map_heatmap: any # or the latest version on Pub
+  latlong2: ^0.9.0
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
