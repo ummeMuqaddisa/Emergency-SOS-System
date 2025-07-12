@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:resqmob/Class%20Models/sms.dart';
-import 'package:resqmob/backend/firebase%20config/firebase%20message.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
+import 'package:resqmob/pages/profile/profile.dart';
 
 import '../backend/firebase config/Authentication.dart'; // Assuming this path is correct
 
@@ -31,6 +31,8 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
   final Set<Marker> _markers = {}; // Holds all markers for the map
   StreamSubscription<Position>? _positionStream;
+  late Future<DocumentSnapshot> _userProfileFuture;
+
   void animateTo(Position position) {
     if (_mapController != null) {
       _mapController!.animateCamera(
@@ -48,6 +50,12 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _getCurrentLocation();
     LocationService().getInitialPosition(context);
+
+    // Initialize the Future once
+    _userProfileFuture= FirebaseFirestore.instance
+        .collection("Users")
+        .doc(FirebaseAuth.instance.currentUser?.uid)
+        .get();
 
     // Listen for foreground messages and show dialog
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -72,6 +80,14 @@ class _MyHomePageState extends State<MyHomePage> {
         _currentPosition = pos;
       });
     });
+  }
+  @override
+  void dispose() {
+    // TODO: implement dispose
+
+    _positionStream?.cancel();
+    _mapController?.dispose();
+    super.dispose();
   }
 
   void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
@@ -109,15 +125,24 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _loadAllUserMarkers() async {
     try {
       final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
       Set<Marker> loadedMarkers = {};
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
 
+        final docId = doc.id;
+
+        // Skip if: current user, no location, or invalid data
+        if (docId == currentUserId ||
+            !data.containsKey('location') ||
+            data['location'] == null) {
+          continue;
+        }
+
         if (data.containsKey('location')) {
           final location = data['location'];
-          print(location);
           final latitude = location['latitude'];
           final longitude = location['longitude'];
 
@@ -131,17 +156,16 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
             );
-
             loadedMarkers.add(marker);
           }
         }
       }
 
-      setState(() {
-        _markers.addAll(loadedMarkers); // Assuming _markers is your Set<Marker>
-      });
-      print("user load done");
-      print("-----------------------------------");
+      if (mounted) {
+        setState(() {
+          _markers.addAll(loadedMarkers);
+        });
+      }
     } catch (e) {
       debugPrint('Error loading user markers: $e');
     }
@@ -221,13 +245,87 @@ class _MyHomePageState extends State<MyHomePage> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () {
-              Authentication().signout(context);
+        FutureBuilder<DocumentSnapshot>(
+        future: _userProfileFuture,
+        builder: (context, snapshot) {
+          final imageUrl = snapshot.hasData && snapshot.data!.exists
+              ? snapshot.data!.get("profileImageUrl")
+              : null;
+
+          return PopupMenuButton<int>(
+            color: Colors.white,
+            offset: const Offset(0, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.grey.shade200, width: 1),
+            ),
+            elevation: 2,
+            itemBuilder: (context) => [
+              PopupMenuItem<int>(
+                value: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: const SizedBox(
+                  width: 120,
+                  child: Row(
+                    children: [
+                      Text("Your Profile",
+                          style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              PopupMenuItem<int>(
+                value: 1,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: const SizedBox(
+                  width: 120,
+                  child: Row(
+                    children: [
+
+                      Text("Sign Out",
+                          style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 0) {
+                if (FirebaseAuth.instance.currentUser != null) {
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => profile(
+                      uid: FirebaseAuth.instance.currentUser!.uid
+                    )
+                  ));
+                }
+              } else if (value == 1) {
+                Authentication().signout(context);
+              }
             },
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.grey.shade100,
+                backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+                child: imageUrl == null
+                    ? Icon(Icons.person_outline,
+                    size: 16, color: Colors.grey.shade600)
+                    : null,
+              ),
+            ),
+          );
+        },
+      ),
+      const SizedBox(width: 8),
+      ],
       ),
       body: Stack(
         children: [
