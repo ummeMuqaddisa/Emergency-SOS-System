@@ -65,8 +65,9 @@ class _signupState extends State<signup> {
       path = 'UserPhotos/${DateTime.now().millisecondsSinceEpoch}.jpeg';
 
       if (image != null) {
-        await FirebaseStorage.instance.ref(path).putFile(image!);
-        url = await FirebaseStorage.instance.ref(path).getDownloadURL();
+        final ref = FirebaseStorage.instance.ref(path);
+        await ref.putFile(image!);
+        url = await ref.getDownloadURL();
       }
 
       // Get user location

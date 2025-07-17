@@ -5,8 +5,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:resqmob/pages/admin/admin%20home.dart';
 import 'package:resqmob/pages/authentication/login.dart';
 import 'package:resqmob/pages/homepage.dart';
+import 'package:resqmob/wrapper.dart';
 import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
 import 'modules/heatmap.dart';
@@ -51,8 +53,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: (FirebaseAuth.instance.currentUser!=null)? MyHomePage():login(),
-    //  home: login(),
+      //home: (FirebaseAuth.instance.currentUser!=null)? BasicFlutterMapPage():login(),
+      home: Wrapper(),
     );
   }
 }

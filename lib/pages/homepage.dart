@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -10,7 +11,8 @@ import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 
-import '../backend/firebase config/Authentication.dart'; // Assuming this path is correct
+import '../backend/firebase config/Authentication.dart';
+import '../backend/firebase config/firebase message.dart'; // Assuming this path is correct
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -31,7 +33,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
   final Set<Marker> _markers = {}; // Holds all markers for the map
   StreamSubscription<Position>? _positionStream;
-  late Future<DocumentSnapshot> _userProfileFuture;
 
   void animateTo(Position position) {
     if (_mapController != null) {
@@ -48,14 +49,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
     _getCurrentLocation();
     LocationService().getInitialPosition(context);
 
-    // Initialize the Future once
-    _userProfileFuture= FirebaseFirestore.instance
-        .collection("Users")
-        .doc(FirebaseAuth.instance.currentUser?.uid)
-        .get();
 
     // Listen for foreground messages and show dialog
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -134,7 +131,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
         final docId = doc.id;
 
-        // Skip if: current user, no location, or invalid data
+       // Skip if: current user, no location, or invalid data
         if (docId == currentUserId ||
             !data.containsKey('location') ||
             data['location'] == null) {
@@ -175,26 +172,20 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Get current location and add its marker
   Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoading = true;
-    });
+
+    setState(() => _isLoading = true);
 
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-
-
       setState(() {
         _currentPosition = position;
         _isLoading = false;
       });
 
-      // Move camera to current location
       _mapController?.animateCamera(
-       // position: LatLng(position.latitude, position.longitude),
-        duration: Duration(milliseconds: 1),
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(position.latitude, position.longitude),
@@ -203,12 +194,12 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       );
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print('Error getting current location: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      print('Error getting location: $e');
     }
   }
+
 
   void _fitMarkersInView() {
     if (_markers.isEmpty || _mapController == null) return;
@@ -246,12 +237,39 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 0,
         actions: [
         FutureBuilder<DocumentSnapshot>(
-        future: _userProfileFuture,
+        future: FirebaseFirestore.instance
+          .collection("Users")
+          .doc(FirebaseAuth.instance.currentUser?.uid)
+          .get(),
         builder: (context, snapshot) {
-          final imageUrl = snapshot.hasData && snapshot.data!.exists
-              ? snapshot.data!.get("profileImageUrl")
-              : null;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.grey[300],
+              child: CircularProgressIndicator(
+                padding: EdgeInsets.all(13),
+                strokeWidth: 0.7,
+              ),
+            );
+          }
 
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return InkWell(
+              splashFactory: NoSplash.splashFactory,
+              radius: 50,
+              onTap: (){
+
+              },
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey[300],
+                child: Icon(Icons.person, size: 20, color: Colors.white),
+              ),
+            );
+          }
+          String? imageUrl = snapshot.data!.get("profileImageUrl");
+
+          print(imageUrl);
           return PopupMenuButton<int>(
             color: Colors.white,
             offset: const Offset(0, 50),
@@ -312,12 +330,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               child: CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.grey.shade100,
-                backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
-                child: imageUrl == null
-                    ? Icon(Icons.person_outline,
-                    size: 16, color: Colors.grey.shade600)
+                radius: 20,
+                backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
+                    ? NetworkImage(imageUrl)
+                    : null,
+                backgroundColor: Colors.grey[300],
+                child: (imageUrl == null || imageUrl.isEmpty)
+                    ? Icon(Icons.person, size: 20, color: Colors.white)
                     : null,
               ),
             ),
@@ -404,20 +423,20 @@ class _MyHomePageState extends State<MyHomePage> {
         currentIndex: 1,
         onTap: (index) async{
           try {
-          // final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-          // for (var doc in querySnapshot.docs) {
-          //   final data = doc.data();
+          final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+          for (var doc in querySnapshot.docs) {
+            final data = doc.data();
+
+            final fcm=data['fcmToken'];
+            final currentuser=FirebaseAuth.instance.currentUser!.uid;
+            if(currentuser==doc.id){
+             FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
+            }
+
           //
-          //   final fcm=data['fcmToken'];
-          //   final currentuser=FirebaseAuth.instance.currentUser!.uid;
-          //   if(currentuser!=doc.id){
-          //   //  FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
-          //   }
-          //
-          // //
-          //
-          // }
-          //
+
+          }
+
           sendSos(phone: '+8801839228924', name: "XhAfAn", lat: 23.76922413394876, lng:90.42557442785835 );
           print("done");
           print("-----------------------------------");

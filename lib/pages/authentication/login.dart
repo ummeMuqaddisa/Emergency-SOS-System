@@ -10,6 +10,7 @@ import 'package:resqmob/pages/authentication/signup.dart';
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import '../../main.dart';
+import '../admin/admin home.dart';
 import '../homepage.dart';
 
 class login extends StatefulWidget {
@@ -86,10 +87,10 @@ class _loginState extends State<login> {
       UserModel cuser=UserModel.fromJson((data).data()!);
       await Future.delayed(Duration(seconds: 1));
 
-      // if(cuser.admin==true)
-      //   Navigator.of(context).pushAndRemoveUntil(
-      //     MaterialPageRoute(builder: (context) => MyHomePage()), (Route<dynamic> route) => false,);
-      //  else
+      if(cuser.admin==true)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => BasicFlutterMapPage()), (Route<dynamic> route) => false,);
+       else
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>MyHomePage(),));
 
     } on FirebaseAuthException catch (e){

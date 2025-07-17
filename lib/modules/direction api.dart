@@ -10,14 +10,14 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
 import '../backend/firebase config/Authentication.dart';
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class MyHomePage2 extends StatefulWidget {
+  const MyHomePage2({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MyHomePage2> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage2> {
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(23.76877942952722, 90.4255308815893),
     zoom: 14.0,
