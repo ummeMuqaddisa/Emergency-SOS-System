@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:resqmob/pages/admin/resources/police%20stations.dart';
 import 'dart:async';
 
 import '../../backend/firebase config/Authentication.dart';
@@ -354,7 +355,7 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(userData['name'] ?? 'Unknown User'),
+        title: Text(userData['stationName'] ?? 'Unknown User'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,26 +562,10 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
         children: [
           FloatingActionButton(
             heroTag: "toggle_markers",
-            onPressed: ()async{
-              final Map<String, dynamic> stationData = {
-                "location": {
-                  "longitude": 90.4013640159294,
-                  "latitude": 23.793175005313795
-                },
-                "address": "R-7, H-37, Banani, Dhaka.",
-                "phone": "",
-                "stationName": "Banani"
-              };
-
-              try {
-                await FirebaseFirestore.instance
-                    .collection('/Resources/PoliceStations/Stations').doc('Banani')
-                    .set(stationData);
-
-                print("🚓 Station added successfully.");
-              } catch (e) {
-                print("❌ Failed to add station: $e");
-              }
+            onPressed: (){
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (context) => AddPoliceStations()
+              ));
             },
             backgroundColor: _showingStations ? Colors.red : Colors.blue,
             child: Icon(
@@ -732,3 +717,6 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
     );
   }
 }
+
+
+
