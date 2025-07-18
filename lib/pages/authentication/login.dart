@@ -26,20 +26,70 @@ class _loginState extends State<login> {
   bool loading = false;
   bool _obscurePassword = true;
 
+  Position? _currentPosition;
+
   // Controllers defined outside build to prevent reset on rebuild
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
 
 
 
+  @override
+  void initState() {
+    // TODO: implement initState
+    _getCurrentLocation();
+    super.initState();
+  }
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
+
+  Future<void> _getCurrentLocation() async {
+    if(Platform.isWindows) return;
+
+
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        _currentPosition = position;
+
+      });
+
+    } catch (e) {
+      if (!mounted) return;
+      print('Error getting location: $e');
+    }
+  }
+
   Future<bool> signin(
       {required String email, required String password,context}) async {
     try{
+      print('1');
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       User? user = FirebaseAuth.instance.currentUser;
       print("success");
       print(FirebaseAuth.instance.currentUser);
 
+      final data=await FirebaseFirestore.instance.collection("Users").doc(user!.uid).get();
+
+      final userData = data.data();
+      if (userData == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("User document does not exist.")),
+        );
+        return false;
+      }
+      UserModel cuser = UserModel.fromJson(userData);
+
+      await Future.delayed(Duration(seconds: 1));
+      print('7');
       //fcm token update
       if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
         final fcmToken = await FirebaseMessaging.instance.getToken();
@@ -53,47 +103,56 @@ class _loginState extends State<login> {
           });
         }
       }
+      print('8');
+
 
       // Get current location
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         await Geolocator.openLocationSettings();
       }
-
+      print(serviceEnabled.toString());
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         permission = await Geolocator.requestPermission();
       }
+      print(permission.toString());
 
-      if (permission == LocationPermission.whileInUse ||
-          permission == LocationPermission.always) {
-        final position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
 
+
+
+      //problem here
+
+      if (_currentPosition != null) {
         await FirebaseFirestore.instance
             .collection("Users")
             .doc(user!.uid)
             .update({
           'location': {
-            'latitude': position.latitude,
-            'longitude': position.longitude,
+            'latitude': _currentPosition!.latitude,
+            'longitude': _currentPosition!.longitude,
             'timestamp': DateTime.now().toIso8601String(),
           }
         });
       }
 
-      final data=await FirebaseFirestore.instance.collection("Users").doc(user!.uid).get();
-      UserModel cuser=UserModel.fromJson((data).data()!);
-      await Future.delayed(Duration(seconds: 1));
 
-      if(cuser.admin==true)
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => BasicFlutterMapPage()), (Route<dynamic> route) => false,);
+
+
+
+      print('2');
+      final isadmin=await cuser.admin;
+      print(cuser.admin);
+      if(isadmin)
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>BasicFlutterMapPage(),));
        else
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>MyHomePage(),));
 
+      print('3');
     } on FirebaseAuthException catch (e){
+      print(e.code.toString());
+
       if(e.code=='user-not-found'){
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( e.code.toString())) );
         return false;
@@ -107,6 +166,7 @@ class _loginState extends State<login> {
         return false;
       }
       else{
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( e.code.toString())) );
         return false;
       }
@@ -115,11 +175,15 @@ class _loginState extends State<login> {
 
     }
     catch(e){
+      print('4');
+      print(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( e.toString())) );
       return false;
     }
     return true;
   }
+
+
   @override
   Widget build(BuildContext context) {
     if (loading) {

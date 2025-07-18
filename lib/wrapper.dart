@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:resqmob/pages/admin/admin%20home.dart';
+import 'package:resqmob/pages/admin/admin home.dart';
 import 'package:resqmob/pages/authentication/login.dart';
 import 'package:resqmob/pages/homepage.dart';
 
@@ -47,9 +48,34 @@ class _WrapperState extends State<Wrapper> {
 
               if (isAdmin) {
                 return const BasicFlutterMapPage();
-              } else {
-                return const MyHomePage();
               }
+
+              // Check for Windows-only block
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+                return Scaffold(
+                  body: Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Windows Version is only for admins.",
+                          style: TextStyle(fontSize: 24),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            FirebaseAuth.instance.signOut();
+                          },
+                          child: const Text("Sign Out"),
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              }
+              else
+
+              return const MyHomePage();
             },
           );
         } else {

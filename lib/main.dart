@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:resqmob/pages/admin/admin%20home.dart';
 import 'package:resqmob/pages/authentication/login.dart';
 import 'package:resqmob/pages/homepage.dart';
+import 'package:resqmob/test.dart';
 import 'package:resqmob/wrapper.dart';
 import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
@@ -28,12 +29,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  );
+   );
   final firebaseApi = FirebaseApi();
-  if (!isSkiaWeb && !(Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+  if (!isSkiaWeb && !(Platform.isWindows)) {
     FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
     await firebaseApi.initNotifications();
   }
+
+
+  //this part cause problem in edge and phone web
+
+
   if (kIsWeb) {
     await FirebaseMessaging.instance.setAutoInitEnabled(true);
     await FirebaseMessaging.instance.getToken(vapidKey: "BLwCHwZWPFgo5l5EpYdly8u2Fv0kxwVnTw1e3r5Fx21zbkFs5TapD369ibH1FQoa7mKbR-CyzfOHi0oQW2_OPR0");
@@ -53,7 +59,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      //home: (FirebaseAuth.instance.currentUser!=null)? BasicFlutterMapPage():login(),
       home: Wrapper(),
     );
   }
