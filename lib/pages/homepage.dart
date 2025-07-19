@@ -452,7 +452,7 @@ class _MyHomePageState extends State<MyHomePage> {
               final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
               UserModel user=UserModel.fromJson(data.data()!);
               final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+1);
-            final alert= AlertModel(
+              final alert= AlertModel(
               alertId: length.toString(),
               userId: user.id,
               userName: user.name,
@@ -485,7 +485,7 @@ class _MyHomePageState extends State<MyHomePage> {
               }
             }
             if(index==2){
-              sendSos(phone: '+8801839228924', name: "XhAfAn", lat: 23.76922413394876, lng:90.42557442785835 );
+              sendSos(['01839228924','01742092337'], 'Saif', 23.76922413394876, 90.42557442785835);
               print("done");
               print("-----------------------------------");
             }
