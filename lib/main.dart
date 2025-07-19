@@ -41,11 +41,18 @@ void main() async {
 
   //this part cause problem in edge and phone web
 
-
+try {
   if (kIsWeb) {
     await FirebaseMessaging.instance.setAutoInitEnabled(true);
-    await FirebaseMessaging.instance.getToken(vapidKey: "BLwCHwZWPFgo5l5EpYdly8u2Fv0kxwVnTw1e3r5Fx21zbkFs5TapD369ibH1FQoa7mKbR-CyzfOHi0oQW2_OPR0");
+    await FirebaseMessaging.instance.getToken(
+        vapidKey: "BLwCHwZWPFgo5l5EpYdly8u2Fv0kxwVnTw1e3r5Fx21zbkFs5TapD369ibH1FQoa7mKbR-CyzfOHi0oQW2_OPR0");
   }
+
+  }catch(e){
+    print(e.toString());
+}
+
+
 
   runApp(const MyApp());
 }
