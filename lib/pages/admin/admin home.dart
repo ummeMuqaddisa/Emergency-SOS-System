@@ -179,11 +179,11 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
 
   Future<void> _loadAllUserMarkers() async {
     // Cancel any existing subscription
-    _stationsSubscription?.cancel();
+    _usersSubscription?.cancel();
 
     try {
       print('Starting to load user markers...');
-      _stationsSubscription = await FirebaseFirestore.instance
+      _usersSubscription = await FirebaseFirestore.instance
           .collection('Users')
           .snapshots()
           .listen((QuerySnapshot querySnapshot) {
@@ -245,7 +245,7 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
                 onTap: () => _showUserInfoDialog(data),
                 child: const Icon(
                   Icons.location_pin,
-                  color: Colors.red,
+                  color: Colors.green,
                   size: 40,
                 ),
               ),
@@ -417,11 +417,25 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
           try {
             final data = doc.data() as Map<String, dynamic>;
             print('Processing alert document ${doc.id}: ${data}');
+            final docId = doc.id;
+            // Location parsing
+            final location = data['location'];
+            if (location == null) {
+              print('No location field found for alert $docId');
+              continue;
+            }
 
+            double? latitude;
+            double? longitude;
 
-            double latitude=data['latitude'];
-            double longitude=data['longitude'];
-
+            // Handle different location data structures
+            if (location is Map<String, dynamic>) {
+              latitude = location['latitude']?.toDouble();
+              longitude = location['longitude']?.toDouble();
+            } else if (location is List && location.length >= 2) {
+              latitude = location[0]?.toDouble();
+              longitude = location[1]?.toDouble();
+            }
 
             print('Alert ${doc.id} - Lat: $latitude, Lng: $longitude');
 
@@ -695,25 +709,12 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
           ),
         ],
       ),
+
       body: _buildMapContent(),
+
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          FloatingActionButton(
-            heroTag: "toggle_markers",
-            onPressed: (){
-              Navigator.push(context, MaterialPageRoute(
-                  builder: (context) => AddPoliceStations()
-              ));
-            },
-            backgroundColor: _showingStations ? Colors.red : Colors.blue,
-            child: Icon(
-              _showingStations ? Icons.people : Icons.local_police_outlined,
-              color: Colors.white,
-            ),
-          ),
-
-          const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: "center_markers",
             onPressed: _fitMarkersInView,
@@ -724,6 +725,27 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
             ),
           ),
         ],
+      ),
+
+      drawer: Drawer(
+        backgroundColor: Colors.white,
+        child: ListView(
+          children: [
+            SizedBox(
+              height: 100,
+            ),
+            ListTile(
+              title: Text("Police Stations"),
+              onTap: (){
+
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => AddPoliceStations()
+                ));
+
+              },
+            )
+          ],
+        ),
       ),
     );
   }
@@ -833,7 +855,6 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
         ),
       ],
     );
-
 
   }
   Widget _buildCompactButton(String label, VoidCallback onPressed) {

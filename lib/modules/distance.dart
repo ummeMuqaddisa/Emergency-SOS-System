@@ -2,6 +2,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// Returns distance in meters between two LatLng points
+///
 double calculateDistance(LatLng start, LatLng end) {
   return Geolocator.distanceBetween(
     start.latitude,

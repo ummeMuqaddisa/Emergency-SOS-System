@@ -14,7 +14,8 @@ import 'package:resqmob/pages/profile/profile.dart';
 import '../Class Models/alert.dart';
 import '../Class Models/user.dart';
 import '../backend/firebase config/Authentication.dart';
-import '../backend/firebase config/firebase message.dart'; // Assuming this path is correct
+import '../backend/firebase config/firebase message.dart';
+import '../modules/distance.dart'; // Assuming this path is correct
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -50,7 +51,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
     _getCurrentLocation();
     LocationService().getInitialPosition(context);
 
@@ -444,13 +444,15 @@ class _MyHomePageState extends State<MyHomePage> {
           try {
             print(index);
             if(index==0){
+
+              print(calculateDistance(LatLng(23.753054483668922, 90.44925302168778),LatLng(23.76949633026305, 90.42552266287973)));
+
+              
               final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
               UserModel user=UserModel.fromJson(data.data()!);
               final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+1);
             final alert= AlertModel(
               alertId: length.toString(),
-              latitude: _currentPosition!.latitude,
-              longitude: _currentPosition!.longitude,
               userId: user.id,
               userName: user.name,
               userPhone: user.phoneNumber,
@@ -459,6 +461,10 @@ class _MyHomePageState extends State<MyHomePage> {
               timestamp: Timestamp.now(),
               address: user.address,
               message: 'help',
+              location: {
+                'latitude': _currentPosition!.latitude,
+                'longitude': _currentPosition!.longitude,
+              }
             );
 
             FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
