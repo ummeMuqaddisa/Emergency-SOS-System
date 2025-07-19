@@ -38,16 +38,6 @@ class _MyHomePageState extends State<MyHomePage> {
   final Set<Marker> _markers = {}; // Holds all markers for the map
   StreamSubscription<Position>? _positionStream;
 
-  void animateTo(Position position) {
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLng(
-          LatLng(position.latitude, position.longitude),
-        ),
-      );
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -107,6 +97,16 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  void animateTo(Position position) {
+    if (_mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(position.latitude, position.longitude),
+        ),
+      );
+    }
+  }
+
   void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
     showDialog(
       context: context,
@@ -137,7 +137,6 @@ class _MyHomePageState extends State<MyHomePage> {
       },
     );
   }
-
 
   Future<void> _loadAllUserMarkers() async {
     try {
@@ -188,7 +187,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-
   // Get current location and add its marker
   Future<void> _getCurrentLocation() async {
 
@@ -219,7 +217,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-
   void _fitMarkersInView() {
     if (_markers.isEmpty || _mapController == null) return;
 
@@ -248,7 +245,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
         title: const Text('View All User'),
         backgroundColor: Colors.blue,
@@ -365,6 +364,7 @@ class _MyHomePageState extends State<MyHomePage> {
       const SizedBox(width: 8),
       ],
       ),
+
       body: Stack(
         children: [
           GoogleMap(
@@ -386,7 +386,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
         ],
       ),
-      // Floating action button to toggle view
+
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -411,7 +411,8 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-            bottomNavigationBar: BottomNavigationBar(
+
+      bottomNavigationBar: BottomNavigationBar(
         items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.add_alert),
@@ -447,7 +448,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
               print(calculateDistance(LatLng(23.753054483668922, 90.44925302168778),LatLng(23.76949633026305, 90.42552266287973)));
 
-              
+
               final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
               UserModel user=UserModel.fromJson(data.data()!);
               final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+1);

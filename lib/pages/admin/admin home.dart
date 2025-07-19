@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
@@ -64,63 +65,73 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
 
   Future<void> _initializeMap() async {
     try {
-      // First check location permissions
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        setState(() {
-          _errorMessage = 'Location services are disabled.';
-          _currentPosition = const LatLng(23.769224, 90.425574); // Fallback to Dhaka
-        });
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          setState(() {
-            _errorMessage = 'Location permissions are denied';
-            _currentPosition = const LatLng(23.769224, 90.425574); // Fallback to Dhaka
-          });
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _errorMessage = 'Location permissions are permanently denied';
-          _currentPosition = const LatLng(23.769224, 90.425574); // Fallback to Dhaka
-        });
-        return;
-      }
-
-      // Get current position
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      setState(() {
-        _currentPosition = LatLng(position.latitude, position.longitude);
-        _errorMessage = null;
-      });
-
-      // Start listening for position updates
-      _startLocationTracking();
+    //   if(!kIsWeb && defaultTargetPlatform == TargetPlatform.windows){
+    //   // First check location permissions
+    //   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    //   if (!serviceEnabled) {
+    //     setState(() {
+    //       _errorMessage = 'Location services are disabled.';
+    //       _currentPosition =
+    //       const LatLng(23.769224, 90.425574); // Fallback to Dhaka
+    //     });
+    //     return;
+    //   }
+    //
+    //   LocationPermission permission = await Geolocator.checkPermission();
+    //   if (permission == LocationPermission.denied) {
+    //     permission = await Geolocator.requestPermission();
+    //     if (permission == LocationPermission.denied) {
+    //       setState(() {
+    //         _errorMessage = 'Location permissions are denied';
+    //         _currentPosition =
+    //         const LatLng(23.769224, 90.425574); // Fallback to Dhaka
+    //       });
+    //       return;
+    //     }
+    //   }
+    //
+    //   if (permission == LocationPermission.deniedForever) {
+    //     setState(() {
+    //       _errorMessage = 'Location permissions are permanently denied';
+    //       _currentPosition =
+    //       const LatLng(23.769224, 90.425574); // Fallback to Dhaka
+    //     });
+    //     return;
+    //   }
+    //
+    //   // Get current position
+    //   Position position = await Geolocator.getCurrentPosition(
+    //     desiredAccuracy: LocationAccuracy.high,
+    //   );
+    //
+    //   setState(() {
+    //     _currentPosition = LatLng(position.latitude, position.longitude);
+    //     _errorMessage = null;
+    //   });
+    //   print("🙁");
+    //   print("2");
+    //   // Start listening for position updates
+    //   _startLocationTracking();
+    //
+    // }
 
       await _loadAllUserMarkers();
 
       // Wait a bit for map to be ready, then fit markers
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted && _isMapReady) {
+
         _fitMarkersInView();
       }
 
     } catch (e) {
+      print(e.toString());
       setState(() {
         _errorMessage = 'Failed to get location: ${e.toString()}';
         _currentPosition = const LatLng(23.769224, 90.425574); // Fallback to Dhaka
       });
     } finally {
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -400,11 +411,11 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
 
   Future<void> _loadAllAlertMarkers() async {
     // Cancel any existing subscription
-    _stationsSubscription?.cancel();
+    _alertSubscription?.cancel();
 
     try {
       print('Starting to load alert markers...');
-      _stationsSubscription =await FirebaseFirestore.instance
+      _alertSubscription =await FirebaseFirestore.instance
           .collection('Alerts')
           .snapshots()
           .listen((QuerySnapshot querySnapshot) {
@@ -588,6 +599,7 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       appBar: AppBar(
         title: const Text('Map View'),
         actions: [
@@ -789,7 +801,7 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
           children: [
             TileLayer(
               tileProvider: CancellableNetworkTileProvider(),
-              urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              urlTemplate: 'https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
               userAgentPackageName: 'com.example.resqmob',
             ),
             MarkerLayer(
@@ -857,6 +869,7 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
     );
 
   }
+
   Widget _buildCompactButton(String label, VoidCallback onPressed) {
     return TextButton(
       onPressed: onPressed,

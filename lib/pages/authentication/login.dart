@@ -71,10 +71,8 @@ class _loginState extends State<login> {
   Future<bool> signin(
       {required String email, required String password,context}) async {
     try{
-      print('1');
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       User? user = FirebaseAuth.instance.currentUser;
-      print("success");
       print(FirebaseAuth.instance.currentUser);
 
       final data=await FirebaseFirestore.instance.collection("Users").doc(user!.uid).get();
@@ -89,7 +87,6 @@ class _loginState extends State<login> {
       UserModel cuser = UserModel.fromJson(userData);
 
       await Future.delayed(Duration(seconds: 1));
-      print('7');
       //fcm token update
       if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
         final fcmToken = await FirebaseMessaging.instance.getToken();
@@ -103,8 +100,6 @@ class _loginState extends State<login> {
           });
         }
       }
-      print('8');
-
 
       // Get current location
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -118,7 +113,6 @@ class _loginState extends State<login> {
         permission = await Geolocator.requestPermission();
       }
       print(permission.toString());
-
 
 
 
@@ -139,9 +133,6 @@ class _loginState extends State<login> {
 
 
 
-
-
-      print('2');
       final isadmin=await cuser.admin;
       print(cuser.admin);
       if(isadmin)
@@ -149,7 +140,6 @@ class _loginState extends State<login> {
        else
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>MyHomePage(),));
 
-      print('3');
     } on FirebaseAuthException catch (e){
       print(e.code.toString());
 
@@ -175,7 +165,7 @@ class _loginState extends State<login> {
 
     }
     catch(e){
-      print('4');
+
       print(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( e.toString())) );
       return false;
