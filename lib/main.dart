@@ -12,6 +12,7 @@ import 'package:resqmob/test.dart';
 import 'package:resqmob/wrapper.dart';
 import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
+import 'backend/permission handler/background location.dart';
 import 'modules/heatmap.dart';
 
 
@@ -30,6 +31,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
    );
+  //await initializeService();
   final firebaseApi = FirebaseApi();
   if (!isSkiaWeb && !(Platform.isWindows)) {
     FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
@@ -60,6 +62,10 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: Wrapper(),
+      //home: test(),
     );
   }
 }
+
+
+

@@ -49,7 +49,7 @@ class _loginState extends State<login> {
 
 
   Future<void> _getCurrentLocation() async {
-    if(Platform.isWindows) return;
+    if(defaultTargetPlatform == TargetPlatform.windows) return;
 
 
     try {
