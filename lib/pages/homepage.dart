@@ -11,6 +11,8 @@ import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 
+import '../Class Models/alert.dart';
+import '../Class Models/user.dart';
 import '../backend/firebase config/Authentication.dart';
 import '../backend/firebase config/firebase message.dart'; // Assuming this path is correct
 
@@ -22,6 +24,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
   // Initial camera position
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(23.76922413394876, 90.42557442785835),
@@ -43,8 +46,6 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
   }
-
-
 
   @override
   void initState() {
@@ -69,15 +70,34 @@ class _MyHomePageState extends State<MyHomePage> {
     _positionStream = Geolocator.getPositionStream(
       locationSettings: LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 0,
+        distanceFilter: 1,
       ),
-    ).listen((Position pos) {
+    ).listen((Position pos) async {
+
+
+    //   final location = { 'location': {
+    //     'latitude': pos.latitude,
+    //     'longitude': pos.longitude,
+    //     'timestamp': Timestamp.now(),
+    //   }
+    // };
+    // try {
+    //   await FirebaseFirestore.instance
+    //       .collection('Users')
+    //       .doc(FirebaseAuth.instance.currentUser!.uid)
+    //       .set(location, SetOptions(merge: true)); // merge to avoid overwriting other fields
+    // } catch (e) {
+    //   print('Error updating location: $e');
+    // }
+
+
       animateTo(pos);
       setState(() {
         _currentPosition = pos;
       });
     });
   }
+
   @override
   void dispose() {
     // TODO: implement dispose
@@ -167,7 +187,6 @@ class _MyHomePageState extends State<MyHomePage> {
       debugPrint('Error loading user markers: $e');
     }
   }
-
 
 
   // Get current location and add its marker
@@ -395,8 +414,8 @@ class _MyHomePageState extends State<MyHomePage> {
             bottomNavigationBar: BottomNavigationBar(
         items: [
           const BottomNavigationBarItem(
-            icon: Icon(Icons.not_interested_sharp),
-            label: '',
+            icon: Icon(Icons.add_alert),
+            label: 'alert',
           ),
           BottomNavigationBarItem(
             icon: Container(
@@ -423,23 +442,49 @@ class _MyHomePageState extends State<MyHomePage> {
         currentIndex: 1,
         onTap: (index) async{
           try {
-          final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-          for (var doc in querySnapshot.docs) {
-            final data = doc.data();
+            print(index);
+            if(index==0){
+              final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
+              UserModel user=UserModel.fromJson(data.data()!);
+              final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+1);
+            final alert= AlertModel(
+              alertId: length.toString(),
+              latitude: _currentPosition!.latitude,
+              longitude: _currentPosition!.longitude,
+              userId: user.id,
+              userName: user.name,
+              userPhone: user.phoneNumber,
+              severity: 1,
+              status: 'danger',
+              timestamp: Timestamp.now(),
+              address: user.address,
+              message: 'help',
+            );
 
-            final fcm=data['fcmToken'];
-            final currentuser=FirebaseAuth.instance.currentUser!.uid;
-            if(currentuser==doc.id){
-             FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
+            FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
+            print('done');
+            }
+            if(index==1){
+              final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+              for (var doc in querySnapshot.docs) {
+                final data = doc.data();
+                final fcm=data['fcmToken'];
+                final currentuser=FirebaseAuth.instance.currentUser!.uid;
+
+                if("geXyFswHImQbkzX0Up3tSzCQdmE2"==doc.id){
+               // if(currentuser!=doc.id){
+                  FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
+                }
+              }
+            }
+            if(index==2){
+              sendSos(phone: '+8801839228924', name: "XhAfAn", lat: 23.76922413394876, lng:90.42557442785835 );
+              print("done");
+              print("-----------------------------------");
             }
 
-          //
 
-          }
 
-          sendSos(phone: '+8801839228924', name: "XhAfAn", lat: 23.76922413394876, lng:90.42557442785835 );
-          print("done");
-          print("-----------------------------------");
         } catch (e) {
           debugPrint('Error sending notification: $e');
         }

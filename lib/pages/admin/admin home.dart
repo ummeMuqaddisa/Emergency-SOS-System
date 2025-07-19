@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:resqmob/pages/admin/resources/police%20stations.dart';
@@ -27,6 +29,8 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
   bool _isMapReady = false;
 
   StreamSubscription<QuerySnapshot>? _stationsSubscription;
+  StreamSubscription<QuerySnapshot>? _alertSubscription;
+
   StreamSubscription<QuerySnapshot>? _usersSubscription;
 
   bool _showingStations = false; // Track what type of markers are shown
@@ -37,6 +41,18 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
     _mapController = MapController();
     _initializeMap();
     _loadAllUserMarkers();
+
+
+    // Listen for foreground messages and show dialog
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        final title = message.notification?.title ?? 'Notification';
+        final body = message.notification?.body ?? '';
+        final data = message.data;
+
+        _showNotificationDialog(title, body, data);
+      }
+    });
   }
 
   @override
@@ -111,6 +127,37 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
         });
       }
     }
+  }
+
+  void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(body),
+                const SizedBox(height: 12),
+                if (data.isNotEmpty) ...[
+                  const Text('Additional Data:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...data.entries.map((entry) => Text('${entry.key}: ${entry.value}')),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _startLocationTracking() {
@@ -224,7 +271,7 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _isMapReady) {
             print('Fitting user markers to view...');
-            _fitMarkersInView();
+           // _fitMarkersInView();
           }
         });
       },
@@ -347,6 +394,98 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to setup station stream: ${e.toString()}';
+      });
+    }
+  }
+
+  Future<void> _loadAllAlertMarkers() async {
+    // Cancel any existing subscription
+    _stationsSubscription?.cancel();
+
+    try {
+      print('Starting to load alert markers...');
+      _stationsSubscription =await FirebaseFirestore.instance
+          .collection('Alerts')
+          .snapshots()
+          .listen((QuerySnapshot querySnapshot) {
+        if (!mounted) return;
+
+        print('Received ${querySnapshot.docs.length} alert documents');
+        final List<Marker> loadedMarkers = [];
+
+        for (var doc in querySnapshot.docs) {
+          try {
+            final data = doc.data() as Map<String, dynamic>;
+            print('Processing alert document ${doc.id}: ${data}');
+
+
+            double latitude=data['latitude'];
+            double longitude=data['longitude'];
+
+
+            print('Alert ${doc.id} - Lat: $latitude, Lng: $longitude');
+
+            if (latitude == null || longitude == null) {
+              print('Invalid coordinates for Alert ${doc.id}');
+              continue;
+            }
+
+            // Validate coordinates are reasonable
+            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+              print('Invalid coordinate range for Alert ${doc.id}');
+              continue;
+            }
+
+            final marker = Marker(
+              width: 40,
+              height: 40,
+              point: LatLng(latitude, longitude),
+              child: GestureDetector(
+                onTap: () => _showUserInfoDialog(data),
+                child: const Icon(
+                  Icons.location_pin,
+                  color: Colors.red,
+                  size: 40,
+                ),
+              ),
+            );
+            loadedMarkers.add(marker);
+            print('Added marker for Alert ${doc.id}');
+
+          } catch (e) {
+            print('Error processing Alert ${doc.id}: $e');
+          }
+        }
+
+        print('Total markers loaded: ${loadedMarkers.length}');
+
+        if (!mounted) return;
+        setState(() {
+          _markers.clear();
+          _markers.addAll(loadedMarkers);
+          _showingStations = true;
+        });
+
+        // Optionally fit markers to view after update
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _isMapReady) {
+            print('Fitting markers to view...');
+            _fitMarkersInView();
+          }
+        });
+      },
+          onError: (error) {
+            print('Stream error: $error');
+            if (!mounted) return;
+            setState(() {
+              _errorMessage = 'Error loading Alert: ${error.toString()}';
+            });
+          });
+    } catch (e) {
+      print('Setup error: $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to setup Alert stream: ${e.toString()}';
       });
     }
   }
@@ -627,8 +766,8 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
           ),
           children: [
             TileLayer(
+              tileProvider: CancellableNetworkTileProvider(),
               urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              subdomains: const ['a', 'b', 'c'],
               userAgentPackageName: 'com.example.resqmob',
             ),
             MarkerLayer(
@@ -681,6 +820,8 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                _buildCompactButton('alerts', _loadAllAlertMarkers),
+                const SizedBox(width: 8),
                 _buildCompactButton('Stations', _loadAllStationMarkers),
                 const SizedBox(width: 8),
                 _buildCompactButton('Users', _loadAllUserMarkers),
