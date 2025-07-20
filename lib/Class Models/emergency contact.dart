@@ -1,4 +1,3 @@
-
 class EmergencyContact {
   final String name;
   final String phoneNumber;

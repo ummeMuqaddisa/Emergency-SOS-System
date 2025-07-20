@@ -1,3 +1,5 @@
+import 'emergency contact.dart';
+
 class UserModel {
   String id;
   String name;
@@ -9,6 +11,7 @@ class UserModel {
   String token;
   bool admin;
   Map<String, dynamic>? location;
+  List<EmergencyContact> emergencyContacts;
 
   UserModel({
     required this.id,
@@ -20,6 +23,7 @@ class UserModel {
     this.address = '',
     this.token = '',
     this.location,
+    this.emergencyContacts = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -35,12 +39,20 @@ class UserModel {
       'address': address,
       'token': token,
       'location': location,
+      'emergencyContacts': emergencyContacts.map((contact) => contact.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
   // Create UserModel from JSON (for fetching from Firestore/Supabase)
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    List<EmergencyContact> contacts = [];
+    if (json['emergencyContacts'] != null) {
+      contacts = (json['emergencyContacts'] as List)
+          .map((contactJson) => EmergencyContact.fromJson(contactJson))
+          .toList();
+    }
+
     return UserModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
@@ -54,6 +66,7 @@ class UserModel {
       token: json['token'] ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       location: json['location'] != null ? Map<String, dynamic>.from(json['location']) : null,
+      emergencyContacts: contacts,
     );
   }
 
