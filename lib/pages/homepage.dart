@@ -37,6 +37,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
   final Set<Marker> _markers = {}; // Holds all markers for the map
   StreamSubscription<Position>? _positionStream;
+  StreamSubscription<RemoteMessage>? _notificationSub;
 
   @override
   void initState() {
@@ -45,8 +46,9 @@ class _MyHomePageState extends State<MyHomePage> {
     LocationService().getInitialPosition(context);
 
 
-    // Listen for foreground messages and show dialog
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    _notificationSub = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (!mounted) return; // Prevent crash if widget unmounted
+
       if (message.notification != null) {
         final title = message.notification?.title ?? 'Notification';
         final body = message.notification?.body ?? '';
@@ -94,6 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     _positionStream?.cancel();
     _mapController?.dispose();
+    _notificationSub?.cancel();
     super.dispose();
   }
 
@@ -153,7 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
        // Skip if: current user, no location, or invalid data
         if (docId == currentUserId ||
             !data.containsKey('location') ||
-            data['location'] == null) {
+            data['location'] == null || data['admin']==true) {
           continue;
         }
 
@@ -391,14 +394,47 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
-            heroTag: "toggle",
-            onPressed: _getCurrentLocation,
-            backgroundColor:  Colors.blue,
-            child: Icon(
-               Icons.whatshot,
+            heroTag: "safe",
+            onPressed: () async {
+              try {
+                final uid = FirebaseAuth.instance.currentUser?.uid;
+
+                // Update user's isInDanger flag
+                await FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(uid)
+                    .update({
+                  "isInDanger": false,
+                });
+
+                // Fetch all alerts for current user
+                final alertSnapshot = await FirebaseFirestore.instance
+                    .collection('Alerts')
+                    .where('userId', isEqualTo: uid)
+                    .get();
+
+                // Update each alert's status to 'safe'
+                for (var doc in alertSnapshot.docs) {
+                  await doc.reference.update({'status': 'safe'});
+                }
+
+                // Optional: Show a snackbar confirmation
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Status updated to safe.")),
+                  );
+                }
+              } catch (e) {
+                debugPrint("Error updating status: $e");
+              }
+            },
+            backgroundColor: Colors.blue,
+            child: const Icon(
+              Icons.whatshot,
               color: Colors.white,
             ),
           ),
+
           const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: "center",
@@ -468,8 +504,39 @@ class _MyHomePageState extends State<MyHomePage> {
               }
             );
 
-            FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
-            print('done');
+
+
+              if(user.isInDanger==false){
+                await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).update({
+                  'isInDanger': true,
+                });
+                await FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
+                print('done');
+
+
+
+                final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+                for (var doc in querySnapshot.docs) {
+                  final data = doc.data();
+                  final fcm=data['fcmToken'];
+                  final currentuser=FirebaseAuth.instance.currentUser!.uid;
+
+                  if("geXyFswHImQbkzX0Up3tSzCQdmE2"==doc.id){
+                   // print(doc.id);
+                    print('0');
+                    print(data.toString());
+                    print('1');
+                    // if(currentuser!=doc.id){
+                    FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: doc.id,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
+                  }
+                }
+
+
+
+              }
+              else
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Alert sent already")));
+
             }
             if(index==1){
               final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
