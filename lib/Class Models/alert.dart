@@ -50,6 +50,7 @@ class AlertModel {
   // AlertModel -> Firestore
   Map<String, dynamic> toJson() {
     return {
+      'alertId':alertId,
       'userId': userId,
       'userName': userName,
       'userPhone': userPhone,

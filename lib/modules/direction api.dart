@@ -17,7 +17,7 @@ class MyHomePage2 extends StatefulWidget {
   State<MyHomePage2> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage2> {
+class _MyHomePageState extends State<MyHomePage2 > {
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(23.76877942952722, 90.4255308815893),
     zoom: 14.0,
