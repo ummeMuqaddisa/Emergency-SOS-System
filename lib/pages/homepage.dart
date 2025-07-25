@@ -17,6 +17,7 @@ import 'package:resqmob/pages/profile/profile.dart';
 import '../Class Models/alert.dart';
 import '../Class Models/user.dart';
 import '../backend/firebase config/Authentication.dart';
+import 'package:resqmob/backend/api keys.dart';
 import '../backend/firebase config/firebase message.dart';
 import '../modules/distance.dart'; // Assuming this path is correct
 
@@ -42,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
   StreamSubscription<Position>? _positionStream;
   StreamSubscription<RemoteMessage>? _notificationSub;
   LatLng? _navigationDestination;
-
+  bool isDanger = false;
   final Set<Polyline> _polylines = {};
 
   @override
@@ -51,9 +52,14 @@ class _MyHomePageState extends State<MyHomePage> {
     _getCurrentLocation();
     LocationService().getInitialPosition(context);
 
+    _checkInitialMessage();
 
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      print("📥 App opened from background via notification");
+      _handleMessage(message);
+    });
     _notificationSub = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (!mounted) return; // Prevent crash if widget unmounted
+      if (!mounted) return;
 
       if (message.notification != null) {
         final title = message.notification?.title ?? 'Notification';
@@ -68,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _positionStream = Geolocator.getPositionStream(
       locationSettings: LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 1,
+        distanceFilter: 5,
       ),
     ).listen((Position pos) async {
       animateTo(pos);
@@ -119,6 +125,25 @@ class _MyHomePageState extends State<MyHomePage> {
     //     _currentPosition = pos;
     //   });
     // });
+
+    try{
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .get()
+          .then((doc) {
+        if (doc.exists) {
+          setState(() {
+            isDanger = doc.get('isInDanger');
+          });
+
+          print('isDanger: $isDanger');
+        }
+      })
+          .catchError((e) => print('Error: $e'));
+    }catch(e){
+      print(e);
+    }
   }
 
   @override
@@ -130,6 +155,28 @@ class _MyHomePageState extends State<MyHomePage> {
     _notificationSub?.cancel();
     super.dispose();
   }
+
+  void _checkInitialMessage() async {
+    RemoteMessage? initialMessage =
+    await FirebaseMessaging.instance.getInitialMessage();
+
+    if (initialMessage != null) {
+      print("🧊 App opened from terminated state via notification");
+      _handleMessage(initialMessage);
+    }
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    final data = message.data;
+
+    final title = message.notification?.title ?? 'Notification';
+    final body = message.notification?.body ?? '';
+
+    if (context.mounted) {
+      _showNotificationDialog(title, body, data); // or navigate, etc.
+    }
+  }
+
 
   void animateTo(Position position) {
     if (_mapController != null) {
@@ -164,25 +211,20 @@ class _MyHomePageState extends State<MyHomePage> {
           actions: [
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop(); // Close dialog first
+                Navigator.of(context).pop();
 
                 final userId = FirebaseAuth.instance.currentUser?.uid;
                 final double? lat = double.tryParse(data['latitude'].toString());
                 final double? lng = double.tryParse(data['longitude'].toString());
                 final String? alertId = data['alertId'];
-                print(data.toString());// Ensure alertId is sent in FCM
-                print('😀😀');
-                print(alertId);
                 if (userId != null && alertId != null) {
                   try {
                     final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(alertId);
-
-                    // Ensure the field exists
                     await alertRef.set({
                       'responders': [],
                     }, SetOptions(merge: true));
 
-                    // Now update with arrayUnion
+
                     await alertRef.update({
                       'responders': FieldValue.arrayUnion([userId]),
                     });
@@ -218,7 +260,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-  Future<void> _loadAllUserMarkers() async {
+  Future<void> _loadAllAlertMarkers() async {
     try {
       final querySnapshot = await FirebaseFirestore.instance.collection('Alerts').get();
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -251,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onTap: () {
                 _showNavigationBottomSheet(
                   LatLng(latitude, longitude),
-                  data['name'] ?? 'Unknown User',
+                  data,
                 );
               },
             );
@@ -270,7 +312,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _checkArrival(Position current, LatLng destination) {
+
+  void _checkArrival(Position current, LatLng destination) async{
     final distance = Geolocator.distanceBetween(
       current.latitude,
       current.longitude,
@@ -278,7 +321,7 @@ class _MyHomePageState extends State<MyHomePage> {
       destination.longitude,
     );
 
-    if (distance < 20) { // You can tune this threshold
+    if (distance < 5 ) { // You can tune this threshold
       setState(() {
         _navigationDestination = null;
         _polylines.clear();
@@ -347,15 +390,14 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  final String _googleApiKey = 'AIzaSyDpsSTqSS_0SvOcZYLWxLjDnq3UGwEgWq0';
+
   Future<void> _getDirections(LatLng origin, LatLng destination) async {
     setState(() => _isLoading = true);
-
+    final String _googleApiKey= apiKey.getKey();
     final url =
         'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&alternatives=true&key=$_googleApiKey';
 
     final response = await http.get(Uri.parse(url));
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['status'] == 'OK') {
@@ -443,51 +485,100 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() => _isLoading = false);
   }
 
-  void _showNavigationBottomSheet(LatLng destination, String name) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Navigate to $name',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.navigation),
-                label: const Text('Start Navigation'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () async {
-                  Navigator.pop(context); // close the bottom sheet
-                  if (_currentPosition != null) {
-                    _navigationDestination = destination; // store for live updating
-                    await _getDirections(
-                      LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                      _navigationDestination!,
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Current location not available')),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
+  void _showNavigationBottomSheet(LatLng destination, Map<String, dynamic> data) async {
+    final userId = data['userId'];
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User ID is missing')),
+      );
+      return;
+    }
+
+    try {
+
+      final userDoc = await FirebaseFirestore.instance.collection("Users").doc(userId).get();
+
+      if (!userDoc.exists || userDoc.data() == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not found')),
         );
-      },
-    );
+        return;
+      }
+
+      final user = UserModel.fromJson(userDoc.data()!);
+
+      // Now show the bottom sheet with fetched user data
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (BuildContext context) {
+          return Padding(
+            padding: MediaQuery.of(context).viewInsets,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Text(
+                      'Navigate to ${user.name}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (user.phoneNumber != null) ...[
+                    Text("Name : ${user.phoneNumber}"),
+                    const SizedBox(height: 8),
+                  ],
+                  if (user.email != null) ...[
+                    Text("Email: ${user.email}"),
+                    const SizedBox(height: 8),
+                  ],
+                  if (user.isInDanger != null) ...[
+                    Text("Danger Status: ${user.isInDanger}"),
+                    const SizedBox(height: 8),
+                  ],
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.navigation),
+                    label: const Text('Start Navigation'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      if (_currentPosition != null) {
+                        _navigationDestination = destination;
+                        await _getDirections(
+                          LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                          _navigationDestination!,
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Current location not available')),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load user info: $e')),
+      );
+    }
   }
+
 
 
   @override
@@ -614,20 +705,32 @@ class _MyHomePageState extends State<MyHomePage> {
 
       body: Stack(
         children: [
+
           GoogleMap(
             polylines: _polylines,
             initialCameraPosition: _initialPosition,
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
-              _loadAllUserMarkers(); // Load all user markers when the map is created
+              _loadAllAlertMarkers();
             },
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
             compassEnabled: true,
             mapToolbarEnabled: true,
             zoomControlsEnabled: false,
-            markers: _markers, // Pass the entire set of markers to the map
+            markers: _markers,
           ),
+
+          // red layer when alert is on
+          if(isDanger)
+          IgnorePointer(
+            child: Container(
+              color: Colors.red.withOpacity(0.3), // Adjust opacity as needed
+              height: double.infinity,
+              width: double.infinity,
+            ),
+          ),
+
           if (_isLoading)
             const Center(
               child: CircularProgressIndicator(),
@@ -657,7 +760,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     .collection('Alerts')
                     .where('userId', isEqualTo: uid)
                     .get();
-
+                print(alertSnapshot.docs.length);
+                if(alertSnapshot.docs.length==0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("No Alert found from you."))
+                  );
+                  return;
+                }
                 // Update each alert's status to 'safe'
                 for (var doc in alertSnapshot.docs) {
                   await doc.reference.update({'status': 'safe'});
@@ -669,6 +778,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     SnackBar(content: Text("Status updated to safe.")),
                   );
                 }
+                setState(() {
+                  isDanger = false;
+                });
               } catch (e) {
                 debugPrint("Error updating status: $e");
               }
@@ -777,8 +889,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: doc.id,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude,alertId:alert.alertId);
                   }
                 }
-
-
+                setState(() {
+                  isDanger = true;
+                });
 
               }
               else
