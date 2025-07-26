@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/profile/profile.dart';
+import 'package:resqmob/test.dart';
 
 import '../Class Models/alert.dart';
 import '../Class Models/user.dart';
@@ -692,6 +693,19 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               PopupMenuItem<int>(
+                value: 3,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: const SizedBox(
+                  width: 120,
+                  child: Row(
+                    children: [
+                      Text("Social",
+                          style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              PopupMenuItem<int>(
                 value: 1,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: const SizedBox(
@@ -717,6 +731,29 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
               } else if (value == 1) {
                 Authentication().signout(context);
+              }
+              else if (value == 3) {
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+
+                if (userId != null) {
+
+                  FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
+                    print(doc.data());
+                    if (doc.exists) {
+                      print(doc.data());
+                      UserModel user = UserModel.fromJson(doc.data()!);
+                      Navigator.push(context, MaterialPageRoute(
+                          builder: (context) => SocialMediaScreen(currentUser: user)
+                      ));
+                    } else {
+                      debugPrint("User document does not exist.");
+                    }
+                  }).catchError((error) {
+                    debugPrint("Error fetching user: $error");
+                  });
+                } else {
+                  debugPrint("User not logged in.");
+                }
               }
             },
             child: Container(
