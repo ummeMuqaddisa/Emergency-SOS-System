@@ -42,6 +42,9 @@ class _MyHomePageState extends State<MyHomePage> {
   final Set<Marker> _markers = {}; // Holds all markers for the map
   StreamSubscription<Position>? _positionStream;
   StreamSubscription<RemoteMessage>? _notificationSub;
+  StreamSubscription<DocumentSnapshot>? _alertListener;
+  StreamSubscription<QuerySnapshot>? _alertMarkerListener;
+
   LatLng? _navigationDestination;
   bool isDanger = false;
   final Set<Polyline> _polylines = {};
@@ -81,14 +84,17 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _currentPosition = pos;
       });
-
+      print('1');
+      print(_navigationDestination);
       // ⬇ Live update polyline
       if (_navigationDestination != null) {
+        print('2');
         await _getDirections(
           LatLng(pos.latitude, pos.longitude),
           _navigationDestination!,
         );
         _checkArrival(pos, _navigationDestination!);
+        print('3');
       }
     });
 
@@ -153,6 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _positionStream?.cancel();
     _mapController?.dispose();
     _notificationSub?.cancel();
+    _alertListener?.cancel();
     super.dispose();
   }
 
@@ -177,16 +184,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-
-  void animateTo(Position position) {
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLng(
-          LatLng(position.latitude, position.longitude),
-        ),
-      );
-    }
-  }
 
   void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
     showDialog(
@@ -230,6 +227,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     });
 
                     print("User $userId added to responders of alert $alertId");
+
+
                   } catch (e) {
                     print("Failed to add responder: $e");
                   }
@@ -238,10 +237,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
 
                 if (lat != null && lng != null && _currentPosition != null) {
+                  print("Getting directions...");
+                  _navigationDestination = LatLng(lat, lng);
                   await _getDirections(
                     LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
                     LatLng(lat, lng),
                   );
+                  _checkDanger(alertId!);
                 } else {
                   print("Invalid or missing coordinates.");
                 }
@@ -261,55 +263,56 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Future<void> _loadAllAlertMarkers() async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance.collection('Alerts').get();
-      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    _alertMarkerListener?.cancel();
 
-      Set<Marker> loadedMarkers = {};
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    _alertMarkerListener = FirebaseFirestore.instance
+        .collection('Alerts')
+        .snapshots()
+        .listen((querySnapshot) {
+      Set<Marker> updatedMarkers = {};
 
       for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-
+        final data = doc.data() as Map<String, dynamic>;
         final docId = doc.id;
 
-       // Skip if: current user, no location, or invalid data
+        // Skip: if current user's alert, invalid or safe, or by admin
         if (docId == currentUserId ||
             !data.containsKey('location') ||
-            data['location'] == null || data['admin']==true || data['status']=='safe') {
+            data['location'] == null ||
+            data['admin'] == true ||
+            data['status'] == 'safe' ||
+            data['userId'] == currentUserId) {
           continue;
         }
 
+        final location = data['location'];
+        final latitude = location['latitude'];
+        final longitude = location['longitude'];
 
-        if (data.containsKey('location')) {
-          final location = data['location'];
-          final latitude = location['latitude'];
-          final longitude = location['longitude'];
-
-          if (latitude != null && longitude != null) {
-            final marker = Marker(
-              markerId: MarkerId(doc.id),
-              position: LatLng(latitude, longitude),
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
-              onTap: () {
-                _showNavigationBottomSheet(
-                  LatLng(latitude, longitude),
-                  data,
-                );
-              },
-            );
-            loadedMarkers.add(marker);
-          }
+        if (latitude != null && longitude != null) {
+          final marker = Marker(
+            markerId: MarkerId(docId),
+            position: LatLng(latitude, longitude),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+            onTap: () {
+              _showNavigationBottomSheet(LatLng(latitude, longitude), data);
+            },
+          );
+          updatedMarkers.add(marker);
         }
       }
 
       if (mounted) {
         setState(() {
-          _markers.addAll(loadedMarkers);
+          _markers.clear();
+          _markers.addAll(updatedMarkers);
         });
       }
-    } catch (e) {
-      debugPrint('Error loading user markers: $e');
-    }
+    }, onError: (e) {
+      debugPrint("Marker listener error: $e");
+    });
   }
 
 
@@ -331,6 +334,40 @@ class _MyHomePageState extends State<MyHomePage> {
         const SnackBar(content: Text('You have arrived at your destination!')),
       );
     }
+  }
+
+  void _checkDanger(String alertId) {
+    _alertListener?.cancel();
+
+    _alertListener = FirebaseFirestore.instance
+        .collection('Alerts')
+        .doc(alertId)
+        .snapshots()
+        .listen((doc) {
+      if (!doc.exists) return;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final status = data['status'];
+
+      if (status == 'safe') {
+        print('Alert marked as safe. Stopping navigation.');
+        setState(() {
+          _navigationDestination = null;
+          _polylines.clear();
+
+        });
+
+
+        // Optionally show feedback
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Alert is marked safe. Navigation stopped.')),
+          );
+        }
+
+        _alertListener?.cancel(); // Stop listening
+      }
+    });
   }
 
 
@@ -364,6 +401,16 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void animateTo(Position position) {
+    if (_mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(position.latitude, position.longitude),
+        ),
+      );
+    }
+  }
+
   void _fitMarkersInView() {
     if (_markers.isEmpty || _mapController == null) return;
 
@@ -392,97 +439,92 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Future<void> _getDirections(LatLng origin, LatLng destination) async {
-    setState(() => _isLoading = true);
-    final String _googleApiKey= apiKey.getKey();
-    final url =
+    final String _googleApiKey = apiKey.getKey();
+    final String url =
         'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&alternatives=true&key=$_googleApiKey';
 
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['status'] == 'OK') {
-        _polylines.clear();
+    try {
+      final response = await http.get(Uri.parse(url));
 
-        final List<Color> routeColors = [
-          Colors.blue,
-          Colors.green,
-          Colors.purple,
-          Colors.orange,
-          Colors.red,
-        ];
-
-        LatLngBounds? bounds;
-        int colorIndex = 0;
-
-        for (var route in data['routes']) {
-          final points = PolylinePoints().decodePolyline(
-            route['overview_polyline']['points'],
-          );
-
-          if (points.isEmpty) continue;
-
-          final polyline = Polyline(
-            polylineId: PolylineId('route_$colorIndex'),
-            color: routeColors[colorIndex % routeColors.length],
-            width: 6,
-            points: points
-                .map((point) => LatLng(point.latitude, point.longitude))
-                .toList(),
-          );
-
-          _polylines.add(polyline);
-
-          // Compute bounds from polyline
-          final lats = polyline.points.map((p) => p.latitude);
-          final lngs = polyline.points.map((p) => p.longitude);
-          bounds ??= LatLngBounds(
-            southwest: LatLng(lats.reduce((a, b) => a < b ? a : b), lngs.reduce((a, b) => a < b ? a : b)),
-            northeast: LatLng(lats.reduce((a, b) => a > b ? a : b), lngs.reduce((a, b) => a > b ? a : b)),
-          );
-
-          colorIndex++;
-        }
-
-        // Add origin & destination markers
-        // _markers.add(Marker(
-        //   markerId: const MarkerId("origin"),
-        //   position: origin,
-        //   infoWindow: const InfoWindow(title: "You"),
-        //   icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        // ));
-        _markers.add(Marker(
-          markerId: const MarkerId("destination"),
-          position: destination,
-          infoWindow: const InfoWindow(title: "Destination"),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        ));
-
-        // Animate to fit all markers and polyline
-        if (_mapController != null && bounds != null) {
-          await _mapController!.animateCamera(
-            CameraUpdate.newLatLngBounds(bounds, 100),
-          );
-        }
-
-        // Optional: Show route info (first route only)
-        final leg = data['routes'][0]['legs'][0];
-        final distance = leg['distance']['text'];
-        final duration = leg['duration']['text'];
+      if (response.statusCode != 200) {
+        debugPrint("❌ HTTP error: ${response.statusCode}");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Route: $distance, Duration: $duration')),
+            SnackBar(content: Text('HTTP Error: ${response.statusCode}')),
           );
         }
-
-        setState(() {});
-      } else {
-        debugPrint("Directions API error: ${data['status']}");
+        return;
       }
-    } else {
-      debugPrint("HTTP error: ${response.statusCode}");
-    }
 
-    setState(() => _isLoading = false);
+      final data = json.decode(response.body);
+
+      if (data['status'] != 'OK') {
+        debugPrint("❌ Directions API error: ${data['status']}");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Directions API Error: ${data['status']}')),
+          );
+        }
+        return;
+      }
+
+      final List<Polyline> updatedPolylines = [];
+      final List<Color> routeColors = [
+        Colors.blue,
+        Colors.green,
+        Colors.purple,
+        Colors.orange,
+        Colors.red,
+      ];
+
+      LatLngBounds? bounds;
+      int colorIndex = 0;
+
+      for (var route in data['routes']) {
+        final polylineStr = route['overview_polyline']?['points'];
+        if (polylineStr == null) continue;
+
+        final points = PolylinePoints().decodePolyline(polylineStr);
+        if (points.isEmpty) continue;
+
+        final polyline = Polyline(
+          polylineId: PolylineId('route_$colorIndex'),
+          color: routeColors[colorIndex % routeColors.length],
+          width: 6,
+          points: points.map((p) => LatLng(p.latitude, p.longitude)).toList(),
+        );
+
+        updatedPolylines.add(polyline);
+
+        final lats = polyline.points.map((p) => p.latitude);
+        final lngs = polyline.points.map((p) => p.longitude);
+
+        bounds ??= LatLngBounds(
+          southwest: LatLng(
+              lats.reduce((a, b) => a < b ? a : b), lngs.reduce((a, b) => a < b ? a : b)),
+          northeast: LatLng(
+              lats.reduce((a, b) => a > b ? a : b), lngs.reduce((a, b) => a > b ? a : b)),
+        );
+
+        colorIndex++;
+      }
+
+      if (context.mounted) {
+        setState(() {
+          _polylines.clear();
+          _polylines.addAll(updatedPolylines);
+        });
+      }
+
+    } catch (e, stacktrace) {
+      debugPrint("❌ Exception during getDirections: $e");
+      debugPrint("Stacktrace: $stacktrace");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Something went wrong while fetching directions.')),
+        );
+      }
+    }
   }
 
   void _showNavigationBottomSheet(LatLng destination, Map<String, dynamic> data) async {
@@ -558,6 +600,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
                           _navigationDestination!,
                         );
+                        _checkDanger(data['alertId']);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Current location not available')),
@@ -758,7 +801,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 // Fetch all alerts for current user
                 final alertSnapshot = await FirebaseFirestore.instance
                     .collection('Alerts')
-                    .where('userId', isEqualTo: uid)
+                    .where('userId', isEqualTo: uid).where('status',isEqualTo: 'danger')
                     .get();
                 print(alertSnapshot.docs.length);
                 if(alertSnapshot.docs.length==0) {
