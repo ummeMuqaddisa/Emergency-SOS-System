@@ -999,13 +999,31 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           FloatingActionButton(
           heroTag: "test",
-          onPressed: (){
+          onPressed: ()async{
+
+            final currentuserid=FirebaseAuth.instance.currentUser!.uid;
+            final currentuserdata=await FirebaseFirestore.instance.collection('Users').doc(currentuserid).get();
+            UserModel user=UserModel.fromJson(currentuserdata.data()!);
 
 
+            final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+            for (var doc in querySnapshot.docs) {
+              final data = doc.data();
+              final fcm = data['fcmToken'];
+              UserModel ouser = UserModel.fromJson(data);
+              final cloc = user.location;
+              final uloc = ouser.location;
+              print(cloc);
+              print(uloc);
 
-
-
-
+              if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
+                print(
+                    calculateDistance(
+                        LatLng(cloc?['latitude'], cloc?['longitude'],),
+                        LatLng(uloc?['latitude'], uloc?['longitude'],))
+                );
+              }
+            }
 
           },
           backgroundColor: Colors.red,
@@ -1129,7 +1147,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 'latitude': _currentPosition!.latitude,
                 'longitude': _currentPosition!.longitude,
               }
-            );
+              );
 
 
 
@@ -1137,43 +1155,44 @@ class _MyHomePageState extends State<MyHomePage> {
                 await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).update({
                   'isInDanger': true,
                 });
-
                 await FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
-                print('done');
+                //print('alert create done');
 
 
+
+               //alert distribution for sev 1
 
                 final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
                 for (var doc in querySnapshot.docs) {
                   final data = doc.data();
-                  final fcm=data['fcmToken'];
-                  final currentuser=FirebaseAuth.instance.currentUser!.uid;
+                  final fcm = data['fcmToken'];
+                  UserModel ouser = UserModel.fromJson(data);
+                  final cloc = user.location;
+                  final uloc = ouser.location;
 
-                  if("pygVJCfrL7OJLQoRRHbo5yRhsGg1"==doc.id){
-                   // print(doc.id);
-                    print('0');
-                    print(data.toString());
-                    print('1');
-                    // if(currentuser!=doc.id){
-                    print(alert.alertId);
+                  final distance =calculateDistance(
+                      LatLng(cloc?['latitude'], cloc?['longitude'],),
+                      LatLng(uloc?['latitude'], uloc?['longitude'],));
+                  print('user: ${ouser.name}, distance: $distance');
 
+                  if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
+                   if(0<distance && distance<501){
 
-
-
-
-
-
-
-
-                   // FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: doc.id,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude,alertId:alert.alertId);
-
-
-
-
-
-
+                    FirebaseApi().sendNotification(token: fcm,
+                        title: 'Alert',
+                        body: 'help meeeeeeeeeeeeee',
+                        userId: ouser.id,
+                        latitude: _currentPosition?.latitude,
+                        longitude: _currentPosition?.longitude);
+                    print('alert sent to ${ouser.name}, distance: $distance');
+                  }
                   }
                 }
+
+                //police station
+                
+
+
 
                 setState(() {
                   isDanger = true;
@@ -1260,12 +1279,54 @@ class _MyHomePageState extends State<MyHomePage> {
               }
               else if(user.isInDanger==true){
                final alert_data= await FirebaseFirestore.instance.collection('Alerts').where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid).where('status',isEqualTo: 'danger').get();
-               AlertModel alert=AlertModel.fromJson(alert_data.docs.first.data() as Map<String, dynamic>, alert_data.docs.first.id);
-               if(alert.severity<3){
-                 await FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).update({
+               AlertModel alert2=AlertModel.fromJson(alert_data.docs.first.data() as Map<String, dynamic>, alert_data.docs.first.id);
+               if(alert2.severity<3){
+                 await FirebaseFirestore.instance.collection('Alerts').doc(alert2.alertId).update({
                    'severity': FieldValue.increment(1),
                  });
-                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity increased to ${alert.severity+1}")));
+
+
+                 //alert distribution for sev ++
+
+                 final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+                 for (var doc in querySnapshot.docs) {
+                   final data = doc.data();
+                   final fcm = data['fcmToken'];
+                   UserModel ouser = UserModel.fromJson(data);
+                   final cloc = user.location;
+                   final uloc = ouser.location;
+
+                   final distance =calculateDistance(
+                       LatLng(cloc?['latitude'], cloc?['longitude'],),
+                       LatLng(uloc?['latitude'], uloc?['longitude'],));
+                   print('severity: ${alert2.severity}, user: ${ouser.name}, distance: $distance');
+
+                   if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
+                     if(500<distance && distance<10001 && alert2.severity==1){
+
+                       FirebaseApi().sendNotification(token: fcm,
+                           title: 'Alert',
+                           body: 'help meeeeeeeeeeeeee',
+                           userId: ouser.id,
+                           latitude: _currentPosition?.latitude,
+                           longitude: _currentPosition?.longitude);
+                       print('alert sent to ${ouser.name}, distance: $distance');
+                     }
+                     if( 10000<distance && distance<15000 && alert2.severity==2){
+
+                       FirebaseApi().sendNotification(token: fcm,
+                           title: 'Alert',
+                           body: 'help meeeeeeeeeeeeee',
+                           userId: ouser.id,
+                           latitude: _currentPosition?.latitude,
+                           longitude: _currentPosition?.longitude);
+                       print('alert sent to ${ouser.name}, distance: $distance');
+                     }
+                   }}
+
+
+
+                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity increased to ${alert2.severity+1}")));
                }
                else{
                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity already at maximum")));
