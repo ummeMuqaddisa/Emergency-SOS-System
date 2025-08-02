@@ -15,12 +15,12 @@ import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:resqmob/test.dart';
 
-import '../Class Models/alert.dart';
-import '../Class Models/user.dart';
-import '../backend/firebase config/Authentication.dart';
+import '../../Class Models/alert.dart';
+import '../../Class Models/user.dart';
+import '../../backend/firebase config/Authentication.dart';
 import 'package:resqmob/backend/api keys.dart';
-import '../backend/firebase config/firebase message.dart';
-import '../modules/distance.dart'; // Assuming this path is correct
+import '../../backend/firebase config/firebase message.dart';
+import '../../modules/distance.dart'; // Assuming this path is correct
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -164,103 +164,6 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void _checkInitialMessage() async {
-    RemoteMessage? initialMessage =
-    await FirebaseMessaging.instance.getInitialMessage();
-
-    if (initialMessage != null) {
-      print("🧊 App opened from terminated state via notification");
-      _handleMessage(initialMessage);
-    }
-  }
-
-  void _handleMessage(RemoteMessage message) {
-    final data = message.data;
-
-    final title = message.notification?.title ?? 'Notification';
-    final body = message.notification?.body ?? '';
-
-    if (context.mounted) {
-      _showNotificationDialog(title, body, data); // or navigate, etc.
-    }
-  }
-
-
-  void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(body),
-                const SizedBox(height: 12),
-                if (data.isNotEmpty) ...[
-                  const Text('Additional Data:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ...data.entries.map((entry) => Text('${entry.key}: ${entry.value}')),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-
-                final userId = FirebaseAuth.instance.currentUser?.uid;
-                final double? lat = double.tryParse(data['latitude'].toString());
-                final double? lng = double.tryParse(data['longitude'].toString());
-                final String? alertId = data['alertId'];
-                if (userId != null && alertId != null) {
-                  try {
-                    final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(alertId);
-                    await alertRef.set({
-                      'responders': [],
-                    }, SetOptions(merge: true));
-
-
-                    await alertRef.update({
-                      'responders': FieldValue.arrayUnion([userId]),
-                    });
-
-                    print("User $userId added to responders of alert $alertId");
-
-
-                  } catch (e) {
-                    print("Failed to add responder: $e");
-                  }
-                } else {
-                  print("Missing userId or alertId");
-                }
-
-                if (lat != null && lng != null && _currentPosition != null) {
-                  print("Getting directions...");
-                  _navigationDestination = LatLng(lat, lng);
-                  await _getDirections(
-                    LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                    LatLng(lat, lng),
-                  );
-                  _checkDanger(alertId!);
-                } else {
-                  print("Invalid or missing coordinates.");
-                }
-              },
-
-              child: const Text('Help'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
 
   Future<void> _loadAllAlertMarkers() async {
@@ -278,15 +181,16 @@ class _MyHomePageState extends State<MyHomePage> {
         final data = doc.data() as Map<String, dynamic>;
         final docId = doc.id;
 
-        // Skip: if current user's alert, invalid or safe, or by admin
         if (docId == currentUserId ||
             !data.containsKey('location') ||
             data['location'] == null ||
             data['admin'] == true ||
-            data['status'] == 'safe' ||
-            data['userId'] == currentUserId) {
+            data['status'] == 'safe'
+            || data['userId'] == currentUserId
+        ) {
           continue;
         }
+        print(data.toString());
 
         final location = data['location'];
         final latitude = location['latitude'];
@@ -316,6 +220,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+
+  //responder navigation handler
 
   void _checkArrival(Position current, LatLng destination) async{
     final distance = Geolocator.distanceBetween(
@@ -373,6 +279,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   // Get current location and add its marker
+
   Future<void> _getCurrentLocation() async {
 
     setState(() => _isLoading = true);
@@ -596,6 +503,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () async {
                       Navigator.pop(context);
                       if (_currentPosition != null) {
+
+
+                        final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(data['alertId']);
+                        await alertRef.set({
+                          'responders': [],
+                        }, SetOptions(merge: true));
+
+
+                        await alertRef.update({
+                          'responders': FieldValue.arrayUnion([userId]),
+                        });
+
+                        print("User $userId added to responders of alert ${data['alertId']}");
+
+
                         _navigationDestination = destination;
                         await _getDirections(
                           LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
@@ -743,7 +665,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       print(doc.data());
                       UserModel user = UserModel.fromJson(doc.data()!);
                       Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => SocialMediaScreen(currentUser: user)
+                          builder: (context) => RedditSocialScreen(currentUser: user)
                       ));
                     } else {
                       debugPrint("User document does not exist.");
@@ -787,6 +709,204 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
 
           GoogleMap(
+            style:
+            '''
+            [
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#f5f5f5"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#616161"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#f5f5f5"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#bdbdbd"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#eeeeee"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#e5e5e5"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#ffffff"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#dadada"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#616161"
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.line",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#e5e5e5"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.station",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#eeeeee"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#c9c9c9"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  }
+]
+            '''
+            ,
             polylines: _polylines,
             initialCameraPosition: _initialPosition,
             onMapCreated: (GoogleMapController controller) {
@@ -802,14 +922,71 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
 
           // red layer when alert is on
-          if(isDanger)
-          IgnorePointer(
-            child: Container(
-              color: Colors.red.withOpacity(0.3), // Adjust opacity as needed
-              height: double.infinity,
-              width: double.infinity,
+          if (isDanger)
+            IgnorePointer(
+              child: Container(
+                color: Colors.red.withOpacity(0.3),
+                height: double.infinity,
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 70.0, bottom: 460, left: 20, right: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('Alerts')
+                          .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid).where('status',isEqualTo: 'danger')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(child: Text("No active alerts"));
+                        }
+
+                        final doc = snapshot.data!.docs.first;
+                        final alert = AlertModel.fromJson(doc.data() as Map<String, dynamic>, doc.id);
+                        final responderCount = alert.responders?.length ?? 0;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "ALERT ACTIVE",
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Severity Level: ${alert.severity}",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Emergency Type: ${alert.etype}",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Responders Count: $responderCount",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Reported to the Police Station: Vatara",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
+
 
           if (_isLoading)
             const Center(
@@ -821,6 +998,21 @@ class _MyHomePageState extends State<MyHomePage> {
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          FloatingActionButton(
+          heroTag: "test",
+          onPressed: (){
+
+
+
+
+
+
+
+          },
+          backgroundColor: Colors.red,
+          child: Text("test"),
+        ),
+          const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: "safe",
             onPressed: () async {
@@ -849,7 +1041,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
                 // Update each alert's status to 'safe'
                 for (var doc in alertSnapshot.docs) {
-                  await doc.reference.update({'status': 'safe'});
+                  await doc.reference.update({'status': 'safe','safeTime': Timestamp.now()});
                 }
 
                 // Optional: Show a snackbar confirmation
@@ -921,10 +1113,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
               print(calculateDistance(LatLng(23.753054483668922, 90.44925302168778),LatLng(23.76949633026305, 90.42552266287973)));
 
-
               final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
               UserModel user=UserModel.fromJson(data.data()!);
-              final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+1);
+              final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+10);
               final alert= AlertModel(
               alertId: length.toString(),
               userId: user.id,
@@ -966,16 +1157,123 @@ class _MyHomePageState extends State<MyHomePage> {
                     print('1');
                     // if(currentuser!=doc.id){
                     print(alert.alertId);
-                    FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: doc.id,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude,alertId:alert.alertId);
+
+
+
+
+
+
+
+
+
+                   // FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: doc.id,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude,alertId:alert.alertId);
+
+
+
+
+
+
                   }
                 }
+
                 setState(() {
                   isDanger = true;
                 });
 
+                //additional danger info
+
+                var dtype='';
+
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Select Type of Emergency"),
+                      content: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            TextButton(
+                              onPressed: () async{
+                                Navigator.pop(context);
+                                dtype='Accident';
+                                await FirebaseFirestore.instance
+                                    .collection('Alerts')
+                                    .doc(alert.alertId)
+                                    .update({"etype": "${dtype}"});
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.red.shade100,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text("Accident"),
+                            ),
+                            const SizedBox(width: 10),
+                            TextButton(
+                              onPressed: () async{
+                                Navigator.pop(context);
+                                dtype='Threat';
+                                await FirebaseFirestore.instance
+                                    .collection('Alerts')
+                                    .doc(alert.alertId)
+                                    .update({"etype": "${dtype}"});
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.red.shade100,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text("Threat"),
+                            ),
+                            const SizedBox(width: 10),
+                            TextButton(
+                              onPressed: () async{
+                                Navigator.pop(context);
+                                dtype='Medical';
+                                await FirebaseFirestore.instance
+                                    .collection('Alerts')
+                                    .doc(alert.alertId)
+                                    .update({"etype": "${dtype}"});
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.red.shade100,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text("Medical"),
+                            ),
+                          ],
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    );
+                  },
+                );
+
+
+
+
+
+              }
+              else if(user.isInDanger==true){
+               final alert_data= await FirebaseFirestore.instance.collection('Alerts').where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid).where('status',isEqualTo: 'danger').get();
+               AlertModel alert=AlertModel.fromJson(alert_data.docs.first.data() as Map<String, dynamic>, alert_data.docs.first.id);
+               if(alert.severity<3){
+                 await FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).update({
+                   'severity': FieldValue.increment(1),
+                 });
+                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity increased to ${alert.severity+1}")));
+               }
+               else{
+                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity already at maximum")));
+               }
               }
               else
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Alert sent already")));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Something went wrong")));
 
             }
             if(index==1){
@@ -1008,4 +1306,107 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
+
+  //Push notification handler
+
+  void _checkInitialMessage() async {
+    RemoteMessage? initialMessage =
+    await FirebaseMessaging.instance.getInitialMessage();
+
+    if (initialMessage != null) {
+      print(" App opened from terminated state via notification");
+      _handleMessage(initialMessage);
+    }
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    final data = message.data;
+
+    final title = message.notification?.title ?? 'Notification';
+    final body = message.notification?.body ?? '';
+
+    if (context.mounted) {
+      _showNotificationDialog(title, body, data); // or navigate, etc.
+    }
+  }
+
+
+  void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(body),
+                const SizedBox(height: 12),
+                if (data.isNotEmpty) ...[
+                  const Text('Additional Data:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...data.entries.map((entry) => Text('${entry.key}: ${entry.value}')),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+                final double? lat = double.tryParse(data['latitude'].toString());
+                final double? lng = double.tryParse(data['longitude'].toString());
+                final String? alertId = data['alertId'];
+                if (userId != null && alertId != null) {
+                  try {
+                    final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(alertId);
+                    await alertRef.set({
+                      'responders': [],
+                    }, SetOptions(merge: true));
+
+
+                    await alertRef.update({
+                      'responders': FieldValue.arrayUnion([userId]),
+                    });
+
+                    print("User $userId added to responders of alert $alertId");
+
+
+                  } catch (e) {
+                    print("Failed to add responder: $e");
+                  }
+                } else {
+                  print("Missing userId or alertId");
+                }
+
+                if (lat != null && lng != null && _currentPosition != null) {
+                  print("Getting directions...");
+                  _navigationDestination = LatLng(lat, lng);
+                  await _getDirections(
+                    LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                    LatLng(lat, lng),
+                  );
+                  _checkDanger(alertId!);
+                } else {
+                  print("Invalid or missing coordinates.");
+                }
+              },
+
+              child: const Text('Help'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
 }
