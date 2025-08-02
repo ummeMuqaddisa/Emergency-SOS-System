@@ -665,7 +665,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       print(doc.data());
                       UserModel user = UserModel.fromJson(doc.data()!);
                       Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => RedditSocialScreen(currentUser: user)
+                          builder: (context) => SocialScreen(currentUser: user)
                       ));
                     } else {
                       debugPrint("User document does not exist.");
@@ -921,7 +921,7 @@ class _MyHomePageState extends State<MyHomePage> {
             markers: _markers,
           ),
 
-          // red layer when alert is on
+          // red layer when alert is on with alert stat
           if (isDanger)
             IgnorePointer(
               child: Container(
@@ -986,7 +986,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
-
 
           if (_isLoading)
             const Center(

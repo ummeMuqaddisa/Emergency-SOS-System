@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:resqmob/pages/admin/admin home.dart';
 import 'package:resqmob/pages/authentication/login.dart';
-import 'package:resqmob/pages/homepage.dart';
+import 'package:resqmob/pages/homepage/homepage.dart';
 
 class Wrapper extends StatefulWidget {
   const Wrapper({super.key});
