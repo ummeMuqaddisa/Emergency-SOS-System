@@ -11,6 +11,16 @@ double calculateDistance(LatLng start, LatLng end) {
     end.longitude,
   );
 }
+
+double calculateDistancewithmap(Map<String, dynamic> start, Map<String, dynamic> end) {
+  return Geolocator.distanceBetween(
+    start['latitude'] as double,
+    start['longitude'] as double,
+    end['latitude'] as double,
+    end['longitude'] as double,
+  );
+}
+
 //
 // LatLng pointA = LatLng(23.772532008881708, 90.4253052285482);
 // LatLng pointB = LatLng(23.76922413394876, 90.42557442785835);

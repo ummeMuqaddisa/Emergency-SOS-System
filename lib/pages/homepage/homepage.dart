@@ -16,6 +16,7 @@ import 'package:resqmob/pages/profile/profile.dart';
 import 'package:resqmob/test.dart';
 
 import '../../Class Models/alert.dart';
+import '../../Class Models/pstation.dart';
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import 'package:resqmob/backend/api keys.dart';
@@ -1001,30 +1002,23 @@ class _MyHomePageState extends State<MyHomePage> {
           heroTag: "test",
           onPressed: ()async{
 
-            final currentuserid=FirebaseAuth.instance.currentUser!.uid;
-            final currentuserdata=await FirebaseFirestore.instance.collection('Users').doc(currentuserid).get();
-            UserModel user=UserModel.fromJson(currentuserdata.data()!);
-
-
-            final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-            for (var doc in querySnapshot.docs) {
-              final data = doc.data();
-              final fcm = data['fcmToken'];
-              UserModel ouser = UserModel.fromJson(data);
-              final cloc = user.location;
-              final uloc = ouser.location;
-              print(cloc);
-              print(uloc);
-
-              if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
-                print(
-                    calculateDistance(
-                        LatLng(cloc?['latitude'], cloc?['longitude'],),
-                        LatLng(uloc?['latitude'], uloc?['longitude'],))
-                );
+            final police = await FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations').get();
+            var min=10000000000.0;
+            PStationModel? nearStation;
+            for (var doc in police.docs){
+              final stationdata = doc.data();
+              PStationModel station = PStationModel.fromJson(stationdata);
+              final stationloc = station.location;
+              final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
+              var shortdis =calculateDistancewithmap(stationloc, userloc);
+              if(shortdis<min){
+                min=shortdis;
+                nearStation = station;
               }
-            }
 
+
+            }
+            print('station: ${nearStation!.stationName}, distance: ${min.toStringAsFixed(2)}');
           },
           backgroundColor: Colors.red,
           child: Text("test"),
@@ -1189,9 +1183,38 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }
 
-                //police station
-                
 
+
+                //police station
+                final police = await FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations').get();
+                var min=10000000000.0;
+                PStationModel? nearStation;
+                for (var doc in police.docs){
+                  final stationdata = doc.data();
+                  PStationModel station = PStationModel.fromJson(stationdata);
+                  final stationloc = station.location;
+                  final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
+                  var shortdis =calculateDistancewithmap(stationloc, userloc);
+                  if(shortdis<min){
+                    min=shortdis;
+                    nearStation = station;
+                  }
+                }
+
+
+              //sending sms to police station
+
+                final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
+
+                //   sendSos(['${nearStation!.phone}'], '${user.name}', userloc['latitude']!, userloc['longitude']!);
+
+
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Informed to Police station: ${nearStation!.stationName}, ${min.toStringAsFixed(2)} meter away")));
+
+                await FirebaseFirestore.instance
+                    .collection('Alerts')
+                    .doc(alert.alertId)
+                    .update({"pstation": "${nearStation!.stationName}"});
 
 
                 setState(() {
@@ -1390,7 +1413,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _showNotificationDialog(title, body, data); // or navigate, etc.
     }
   }
-
 
   void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
     showDialog(
