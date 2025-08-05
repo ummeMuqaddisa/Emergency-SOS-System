@@ -5,16 +5,17 @@ class AlertModel {
   final String userId;
   final String userName;
   final String userPhone;
-  final String? address; // Optional: reverse geocoded location
+  final String? address;
   final String? pstation;
   final String? hpital;
   final String? message;
   final String? etype;
-  final String status; // 'active', 'resolved', 'ignored'
+  final String status;
   final Timestamp timestamp;
   final Timestamp? safeTime;
-  final int severity; // 1 (low) to 5 (extreme)
-  final List<String>? responders; // Nearby users or admins who responded
+  final int severity;
+  final int notified;
+  final List<String>? responders;
   final Map<String, dynamic>? location;
 
   AlertModel({
@@ -31,11 +32,12 @@ class AlertModel {
     required this.timestamp,
     this.safeTime,
     required this.severity,
+    this.notified = 0,
      this.responders,
     this.location
   });
 
-  // Firestore -> AlertModel
+
   factory AlertModel.fromJson(Map<String, dynamic> json, String docId) {
     return AlertModel(
       alertId: docId,
@@ -49,17 +51,20 @@ class AlertModel {
       etype: json['etype'] ?? 'unknown',
       status: json['status'] ?? 'active',
       timestamp: json['timestamp'] ?? Timestamp.now(),
-      safeTime: json['safeTime'] ?? null,
+      safeTime: json['safeTime'],
       severity: json['severity'] ?? 1,
+      notified: json['notified'] ?? 0,
       responders: List<String>.from(json['responders'] ?? []),
-      location: {
-        'latitude': json['longitude']  ,
-        'longitude': json['longitude'] ,
+      location: (json['location'] != null)
+          ? {
+        'latitude': json['location']['latitude']?.toDouble(),
+        'longitude': json['location']['longitude']?.toDouble(),
       }
+          : null,
     );
   }
 
-  // AlertModel -> Firestore
+
   Map<String, dynamic> toJson() {
     return {
       'alertId':alertId,
@@ -75,6 +80,7 @@ class AlertModel {
       'timestamp': timestamp,
       'safeTime': safeTime,
       'severity': severity,
+      'notified': notified,
       'responders': responders,
       'location': location,
     };

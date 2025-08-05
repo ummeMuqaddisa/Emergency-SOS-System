@@ -12,6 +12,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
+import 'package:resqmob/pages/homepage/view%20my%20alerts.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:resqmob/test.dart';
 
@@ -79,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _positionStream = Geolocator.getPositionStream(
       locationSettings: LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 5,
+        distanceFilter: 10,
       ),
     ).listen((Position pos) async {
       animateTo(pos);
@@ -222,6 +223,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
+
   //responder navigation handler
 
   void _checkArrival(Position current, LatLng destination) async{
@@ -277,6 +279,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
+
 
 
   // Get current location and add its marker
@@ -345,6 +348,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
 
 
   Future<void> _getDirections(LatLng origin, LatLng destination) async {
@@ -930,7 +934,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: double.infinity,
                 width: double.infinity,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 70.0, bottom: 460, left: 20, right: 20),
+                  padding: const EdgeInsets.only(top: 70.0, bottom: 430, left: 20, right: 20),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -971,6 +975,11 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                             const SizedBox(height: 12),
                             Text(
+                              "Notified Count: ${alert.notified}",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
                               "Responders Count: $responderCount",
                               style: TextStyle(fontSize: 16),
                             ),
@@ -1001,24 +1010,13 @@ class _MyHomePageState extends State<MyHomePage> {
           FloatingActionButton(
           heroTag: "test",
           onPressed: ()async{
-
-            final police = await FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations').get();
-            var min=10000000000.0;
-            PStationModel? nearStation;
-            for (var doc in police.docs){
-              final stationdata = doc.data();
-              PStationModel station = PStationModel.fromJson(stationdata);
-              final stationloc = station.location;
-              final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
-              var shortdis =calculateDistancewithmap(stationloc, userloc);
-              if(shortdis<min){
-                min=shortdis;
-                nearStation = station;
-              }
-
-
-            }
-            print('station: ${nearStation!.stationName}, distance: ${min.toStringAsFixed(2)}');
+            final alertSnapshot = await FirebaseFirestore.instance
+                .collection('Alerts')
+                .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                .get();
+            print(alertSnapshot.docs[0].data());
+            AlertModel alert = AlertModel.fromJson(alertSnapshot.docs[0].data() as Map<String, dynamic>, alertSnapshot.docs[0].id);
+            print(alert.toJson());
           },
           backgroundColor: Colors.red,
           child: Text("test"),
@@ -1089,6 +1087,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
 
       bottomNavigationBar: BottomNavigationBar(
+
         items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.add_alert),
@@ -1122,8 +1121,6 @@ class _MyHomePageState extends State<MyHomePage> {
             print(index);
             if(index==0){
 
-              print(calculateDistance(LatLng(23.753054483668922, 90.44925302168778),LatLng(23.76949633026305, 90.42552266287973)));
-
               final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
               UserModel user=UserModel.fromJson(data.data()!);
               final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+10);
@@ -1155,7 +1152,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
                //alert distribution for sev 1
-
+                int notified=0;
                 final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
                 for (var doc in querySnapshot.docs) {
                   final data = doc.data();
@@ -1179,9 +1176,19 @@ class _MyHomePageState extends State<MyHomePage> {
                         latitude: _currentPosition?.latitude,
                         longitude: _currentPosition?.longitude);
                     print('alert sent to ${ouser.name}, distance: $distance');
+                    notified=notified+1;
                   }
                   }
                 }
+
+                //sos to emergency contacts
+                final econtacts=user.emergencyContacts;
+                List<String> phoneNumbers = [];
+                for (var contact in econtacts) {
+                  phoneNumbers.add(contact.phoneNumber);
+                }
+               // sendSos(phoneNumbers, '${user.name}', _currentPosition!.latitude, _currentPosition!.longitude);
+                print('sos sent to emergency contacts');
 
 
 
@@ -1211,10 +1218,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Informed to Police station: ${nearStation!.stationName}, ${min.toStringAsFixed(2)} meter away")));
 
+                print('notified: $notified');
                 await FirebaseFirestore.instance
                     .collection('Alerts')
                     .doc(alert.alertId)
-                    .update({"pstation": "${nearStation!.stationName}"});
+                    .update({"pstation": "${nearStation!.stationName}","notified":notified});
 
 
                 setState(() {
@@ -1310,6 +1318,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
                  //alert distribution for sev ++
+                 int notified=0;
 
                  final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
                  for (var doc in querySnapshot.docs) {
@@ -1334,6 +1343,7 @@ class _MyHomePageState extends State<MyHomePage> {
                            latitude: _currentPosition?.latitude,
                            longitude: _currentPosition?.longitude);
                        print('alert sent to ${ouser.name}, distance: $distance');
+                       notified=notified+1;
                      }
                      if( 10000<distance && distance<15000 && alert2.severity==2){
 
@@ -1344,8 +1354,16 @@ class _MyHomePageState extends State<MyHomePage> {
                            latitude: _currentPosition?.latitude,
                            longitude: _currentPosition?.longitude);
                        print('alert sent to ${ouser.name}, distance: $distance');
+                       notified=notified+1;
                      }
-                   }}
+                   }
+                 }
+                 print('notified: $notified');
+
+                 await FirebaseFirestore.instance
+                     .collection('Alerts')
+                     .doc(alert2.alertId)
+                     .update({"notified":notified});
 
 
 
@@ -1360,33 +1378,75 @@ class _MyHomePageState extends State<MyHomePage> {
 
             }
             if(index==1){
-              final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-              for (var doc in querySnapshot.docs) {
-                final data = doc.data();
-                final fcm=data['fcmToken'];
-                final currentuser=FirebaseAuth.instance.currentUser!.uid;
 
-                if("geXyFswHImQbkzX0Up3tSzCQdmE2"==doc.id){
-               // if(currentuser!=doc.id){
-                  FirebaseApi().sendNotification(token: fcm,title: 'Alert',body:  'help meeeeeeeeeeeeee',userId: currentuser,latitude: _currentPosition?.latitude,longitude: _currentPosition?.longitude);
-                }
-              }
             }
             if(index==2){
-              sendSos(['01839228924','01742092337'], 'Saif', 23.76922413394876, 90.42557442785835);
-              print("done");
-              print("-----------------------------------");
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => AlertHistoryScreen()));
             }
 
 
 
         } catch (e) {
-          debugPrint('Error sending notification: $e');
+          debugPrint('Error : $e');
         }
         },
         selectedItemColor: Colors.blue,
         type: BottomNavigationBarType.fixed,
       ),
+
+      // floatingActionButton: FloatingActionButton.large(backgroundColor: Colors.red, elevation: 0,onPressed: (){},child: Icon(Icons.health_and_safety,size: 35,color: Colors.white,),shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100))),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // bottomNavigationBar: BottomAppBar(
+      //   height: 80,
+      //   color: Colors.blue.withOpacity(0.3),
+      //   notchMargin: 8,
+      //   shape: CircularNotchedRectangle(),
+      //   child: Row(
+      //     mainAxisAlignment: MainAxisAlignment.spaceAround,
+      //     children: [
+      //       Expanded(
+      //         child: IconButton(
+      //
+      //             onPressed: (){
+      //               print('0');
+      //             }, icon: Icon(Icons.home,size: 35,)),
+      //       ),
+      //       Expanded(
+      //         child: IconButton(
+      //
+      //             onPressed: (){
+      //           print('1');
+      //         }, icon: Icon(Icons.abc,size: 35,)),
+      //       ),
+      //       Expanded(child: IconButton(onPressed: null, icon: Icon(Icons.abc))),
+      //       Expanded(
+      //         child: IconButton(onPressed: (){
+      //           print('3');
+      //         }, icon: Icon(Icons.abc,size: 35,)),
+      //       ),
+      //       Expanded(
+      //         child: IconButton(onPressed: (){
+      //
+      //           FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get().then((doc) {
+      //             print(doc.data());
+      //             if (doc.exists) {
+      //               print(doc.data());
+      //               UserModel user = UserModel.fromJson(doc.data()!);
+      //               Navigator.push(context, MaterialPageRoute(
+      //                   builder: (context) => SocialScreen(currentUser: user)
+      //               ));
+      //             } else {
+      //               debugPrint("User document does not exist.");
+      //             }
+      //           });
+      //         }, icon: Icon(Icons.sensor_occupied_outlined,size: 35,)),
+      //       ),
+      //     ],
+      //   ),
+      // ),
+      //
+
+
     );
   }
 
