@@ -12,6 +12,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
+import 'package:resqmob/pages/homepage/view%20active%20alerts.dart';
 import 'package:resqmob/pages/homepage/view%20my%20alerts.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:resqmob/test.dart';
@@ -47,6 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   StreamSubscription<RemoteMessage>? _notificationSub;
   StreamSubscription<DocumentSnapshot>? _alertListener;
   StreamSubscription<QuerySnapshot>? _alertMarkerListener;
+  var imageLink;
 
   LatLng? _navigationDestination;
   bool isDanger = false;
@@ -145,9 +147,9 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             isDanger = doc.get('isInDanger');
           });
-
-          print('isDanger: $isDanger');
         }
+        imageLink = doc.get("profileImageUrl");
+
       })
           .catchError((e) => print('Error: $e'));
     }catch(e){
@@ -462,7 +464,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       final user = UserModel.fromJson(userDoc.data()!);
 
-      // Now show the bottom sheet with fetched user data
+
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -552,6 +554,266 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
+  void AlertSystem() async{
+
+
+    final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
+    UserModel user=UserModel.fromJson(data.data()!);
+    final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+10);
+    final alert= AlertModel(
+        alertId: length.toString(),
+        userId: user.id,
+        userName: user.name,
+        userPhone: user.phoneNumber,
+        severity: 1,
+        status: 'danger',
+        timestamp: Timestamp.now(),
+        address: user.address,
+        message: 'help',
+        location: {
+          'latitude': _currentPosition!.latitude,
+          'longitude': _currentPosition!.longitude,
+        }
+    );
+
+
+
+    if(user.isInDanger==false){
+      await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).update({
+        'isInDanger': true,
+      });
+      await FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
+      //print('alert create done');
+
+
+
+      //alert distribution for sev 1
+      int notified=0;
+      final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final fcm = data['fcmToken'];
+        UserModel ouser = UserModel.fromJson(data);
+        final cloc = user.location;
+        final uloc = ouser.location;
+
+        final distance =calculateDistance(
+            LatLng(cloc?['latitude'], cloc?['longitude'],),
+            LatLng(uloc?['latitude'], uloc?['longitude'],));
+        print('user: ${ouser.name}, distance: $distance');
+
+        if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
+          if(0<distance && distance<501){
+
+            FirebaseApi().sendNotification(token: fcm,
+                title: 'Alert',
+                body: 'help meeeeeeeeeeeeee',
+                userId: ouser.id,
+                latitude: _currentPosition?.latitude,
+                longitude: _currentPosition?.longitude);
+            print('alert sent to ${ouser.name}, distance: $distance');
+            notified=notified+1;
+          }
+        }
+      }
+
+      //sos to emergency contacts
+      final econtacts=user.emergencyContacts;
+      List<String> phoneNumbers = [];
+      for (var contact in econtacts) {
+        phoneNumbers.add(contact.phoneNumber);
+      }
+      // sendSos(phoneNumbers, '${user.name}', _currentPosition!.latitude, _currentPosition!.longitude);
+      print('sos sent to emergency contacts');
+
+
+
+      //police station
+      final police = await FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations').get();
+      var min=10000000000.0;
+      PStationModel? nearStation;
+      for (var doc in police.docs){
+        final stationdata = doc.data();
+        PStationModel station = PStationModel.fromJson(stationdata);
+        final stationloc = station.location;
+        final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
+        var shortdis =calculateDistancewithmap(stationloc, userloc);
+        if(shortdis<min){
+          min=shortdis;
+          nearStation = station;
+        }
+      }
+
+
+      //sending sms to police station
+
+      final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
+
+      //   sendSos(['${nearStation!.phone}'], '${user.name}', userloc['latitude']!, userloc['longitude']!);
+
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Informed to Police station: ${nearStation!.stationName}, ${min.toStringAsFixed(2)} meter away")));
+
+      print('notified: $notified');
+      await FirebaseFirestore.instance
+          .collection('Alerts')
+          .doc(alert.alertId)
+          .update({"pstation": "${nearStation!.stationName}","notified":notified});
+
+
+      setState(() {
+        isDanger = true;
+      });
+
+      //additional danger info
+
+      var dtype='';
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Select Type of Emergency"),
+            content: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  TextButton(
+                    onPressed: () async{
+                      Navigator.pop(context);
+                      dtype='Accident';
+                      await FirebaseFirestore.instance
+                          .collection('Alerts')
+                          .doc(alert.alertId)
+                          .update({"etype": "${dtype}"});
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.red.shade100,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Accident"),
+                  ),
+                  const SizedBox(width: 10),
+                  TextButton(
+                    onPressed: () async{
+                      Navigator.pop(context);
+                      dtype='Threat';
+                      await FirebaseFirestore.instance
+                          .collection('Alerts')
+                          .doc(alert.alertId)
+                          .update({"etype": "${dtype}"});
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.red.shade100,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Threat"),
+                  ),
+                  const SizedBox(width: 10),
+                  TextButton(
+                    onPressed: () async{
+                      Navigator.pop(context);
+                      dtype='Medical';
+                      await FirebaseFirestore.instance
+                          .collection('Alerts')
+                          .doc(alert.alertId)
+                          .update({"etype": "${dtype}"});
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.red.shade100,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Medical"),
+                  ),
+                ],
+              ),
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          );
+        },
+      );
+
+
+
+
+
+    }
+    else if(user.isInDanger==true){
+      final alert_data= await FirebaseFirestore.instance.collection('Alerts').where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid).where('status',isEqualTo: 'danger').get();
+      AlertModel alert2=AlertModel.fromJson(alert_data.docs.first.data() as Map<String, dynamic>, alert_data.docs.first.id);
+      if(alert2.severity<3){
+        await FirebaseFirestore.instance.collection('Alerts').doc(alert2.alertId).update({
+          'severity': FieldValue.increment(1),
+        });
+
+
+        //alert distribution for sev ++
+        int notified=0;
+
+        final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+        for (var doc in querySnapshot.docs) {
+          final data = doc.data();
+          final fcm = data['fcmToken'];
+          UserModel ouser = UserModel.fromJson(data);
+          final cloc = user.location;
+          final uloc = ouser.location;
+
+          final distance =calculateDistance(
+              LatLng(cloc?['latitude'], cloc?['longitude'],),
+              LatLng(uloc?['latitude'], uloc?['longitude'],));
+          print('severity: ${alert2.severity}, user: ${ouser.name}, distance: $distance');
+
+          if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
+            if(500<distance && distance<10001 && alert2.severity==1){
+
+              FirebaseApi().sendNotification(token: fcm,
+                  title: 'Alert',
+                  body: 'help meeeeeeeeeeeeee',
+                  userId: ouser.id,
+                  latitude: _currentPosition?.latitude,
+                  longitude: _currentPosition?.longitude);
+              print('alert sent to ${ouser.name}, distance: $distance');
+              notified=notified+1;
+            }
+            if( 10000<distance && distance<15000 && alert2.severity==2){
+
+              FirebaseApi().sendNotification(token: fcm,
+                  title: 'Alert',
+                  body: 'help meeeeeeeeeeeeee',
+                  userId: ouser.id,
+                  latitude: _currentPosition?.latitude,
+                  longitude: _currentPosition?.longitude);
+              print('alert sent to ${ouser.name}, distance: $distance');
+              notified=notified+1;
+            }
+          }
+        }
+        print('notified: $notified');
+
+        await FirebaseFirestore.instance
+            .collection('Alerts')
+            .doc(alert2.alertId)
+            .update({"notified":notified});
+
+
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity increased to ${alert2.severity+1}")));
+      }
+      else{
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity already at maximum")));
+      }
+    }
+    else
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Something went wrong")));
+
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -563,41 +825,8 @@ class _MyHomePageState extends State<MyHomePage> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-        FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-          .collection("Users")
-          .doc(FirebaseAuth.instance.currentUser?.uid)
-          .get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.grey[300],
-              child: CircularProgressIndicator(
-                padding: EdgeInsets.all(13),
-                strokeWidth: 0.7,
-              ),
-            );
-          }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return InkWell(
-              splashFactory: NoSplash.splashFactory,
-              radius: 50,
-              onTap: (){
-
-              },
-              child: CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[300],
-                child: Icon(Icons.person, size: 20, color: Colors.white),
-              ),
-            );
-          }
-          String? imageUrl = snapshot.data!.get("profileImageUrl");
-
-          print(imageUrl);
-          return PopupMenuButton<int>(
+          PopupMenuButton<int>(
             color: Colors.white,
             offset: const Offset(0, 50),
             shape: RoundedRectangleBorder(
@@ -694,20 +923,23 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               child: CircleAvatar(
                 radius: 20,
-                backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
-                    ? NetworkImage(imageUrl)
+                backgroundImage: (imageLink != null && imageLink.isNotEmpty)
+                    ? NetworkImage(imageLink)
                     : null,
                 backgroundColor: Colors.grey[300],
-                child: (imageUrl == null || imageUrl.isEmpty)
+                child: (imageLink == null || imageLink.isEmpty)
                     ? Icon(Icons.person, size: 20, color: Colors.white)
                     : null,
               ),
             ),
-          );
-        },
-      ),
+          ),
+
       const SizedBox(width: 8),
       ],
+      ),
+
+      drawer: Drawer(
+
       ),
 
       body: Stack(
@@ -934,7 +1166,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: double.infinity,
                 width: double.infinity,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 70.0, bottom: 430, left: 20, right: 20),
+                  padding: const EdgeInsets.only(top: 70.0, bottom: 370, left: 20, right: 20),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -1010,13 +1242,8 @@ class _MyHomePageState extends State<MyHomePage> {
           FloatingActionButton(
           heroTag: "test",
           onPressed: ()async{
-            final alertSnapshot = await FirebaseFirestore.instance
-                .collection('Alerts')
-                .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-                .get();
-            print(alertSnapshot.docs[0].data());
-            AlertModel alert = AlertModel.fromJson(alertSnapshot.docs[0].data() as Map<String, dynamic>, alertSnapshot.docs[0].id);
-            print(alert.toJson());
+
+
           },
           backgroundColor: Colors.red,
           child: Text("test"),
@@ -1091,7 +1318,7 @@ class _MyHomePageState extends State<MyHomePage> {
         items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.add_alert),
-            label: 'alert',
+            label: 'active alerts',
           ),
           BottomNavigationBarItem(
             icon: Container(
@@ -1106,12 +1333,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 size: 28,
               ),
             ),
-            label: 'Find',
+            label: 'Sent Alert',
           ),
           const BottomNavigationBarItem(
 
-            icon: Icon(Icons.sms_outlined),
-            label: 'sms',
+            icon: Icon(Icons.list_alt_outlined),
+            label: 'Records',
           ),
 
         ],
@@ -1121,265 +1348,34 @@ class _MyHomePageState extends State<MyHomePage> {
             print(index);
             if(index==0){
 
-              final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
-              UserModel user=UserModel.fromJson(data.data()!);
-              final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+10);
-              final alert= AlertModel(
-              alertId: length.toString(),
-              userId: user.id,
-              userName: user.name,
-              userPhone: user.phoneNumber,
-              severity: 1,
-              status: 'danger',
-              timestamp: Timestamp.now(),
-              address: user.address,
-              message: 'help',
-              location: {
-                'latitude': _currentPosition!.latitude,
-                'longitude': _currentPosition!.longitude,
-              }
+              final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ViewActiveAlertsScreen(
+                        currentPosition: _currentPosition,
+                      )
+                  )
               );
 
+              if (result != null && result['navigate'] == true) {
+                final destination = result['destination'];
+                final alertData = result['alertData'] as Map<String, dynamic>;
 
-
-              if(user.isInDanger==false){
-                await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).update({
-                  'isInDanger': true,
-                });
-                await FirebaseFirestore.instance.collection('Alerts').doc(alert.alertId).set(alert.toJson());
-                //print('alert create done');
-
-
-
-               //alert distribution for sev 1
-                int notified=0;
-                final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-                for (var doc in querySnapshot.docs) {
-                  final data = doc.data();
-                  final fcm = data['fcmToken'];
-                  UserModel ouser = UserModel.fromJson(data);
-                  final cloc = user.location;
-                  final uloc = ouser.location;
-
-                  final distance =calculateDistance(
-                      LatLng(cloc?['latitude'], cloc?['longitude'],),
-                      LatLng(uloc?['latitude'], uloc?['longitude'],));
-                  print('user: ${ouser.name}, distance: $distance');
-
-                  if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
-                   if(0<distance && distance<501){
-
-                    FirebaseApi().sendNotification(token: fcm,
-                        title: 'Alert',
-                        body: 'help meeeeeeeeeeeeee',
-                        userId: ouser.id,
-                        latitude: _currentPosition?.latitude,
-                        longitude: _currentPosition?.longitude);
-                    print('alert sent to ${ouser.name}, distance: $distance');
-                    notified=notified+1;
-                  }
-                  }
+                _navigationDestination = LatLng(destination['latitude'], destination['longitude']);
+                if (_currentPosition != null) {
+                  await _getDirections(
+                    LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                    _navigationDestination!,
+                  );
+                  _checkDanger(alertData['alertId']);
                 }
-
-                //sos to emergency contacts
-                final econtacts=user.emergencyContacts;
-                List<String> phoneNumbers = [];
-                for (var contact in econtacts) {
-                  phoneNumbers.add(contact.phoneNumber);
-                }
-               // sendSos(phoneNumbers, '${user.name}', _currentPosition!.latitude, _currentPosition!.longitude);
-                print('sos sent to emergency contacts');
-
-
-
-                //police station
-                final police = await FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations').get();
-                var min=10000000000.0;
-                PStationModel? nearStation;
-                for (var doc in police.docs){
-                  final stationdata = doc.data();
-                  PStationModel station = PStationModel.fromJson(stationdata);
-                  final stationloc = station.location;
-                  final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
-                  var shortdis =calculateDistancewithmap(stationloc, userloc);
-                  if(shortdis<min){
-                    min=shortdis;
-                    nearStation = station;
-                  }
-                }
-
-
-              //sending sms to police station
-
-                final userloc={'latitude': _currentPosition!.latitude, 'longitude': _currentPosition!.longitude};
-
-                //   sendSos(['${nearStation!.phone}'], '${user.name}', userloc['latitude']!, userloc['longitude']!);
-
-
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Informed to Police station: ${nearStation!.stationName}, ${min.toStringAsFixed(2)} meter away")));
-
-                print('notified: $notified');
-                await FirebaseFirestore.instance
-                    .collection('Alerts')
-                    .doc(alert.alertId)
-                    .update({"pstation": "${nearStation!.stationName}","notified":notified});
-
-
-                setState(() {
-                  isDanger = true;
-                });
-
-                //additional danger info
-
-                var dtype='';
-
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: const Text("Select Type of Emergency"),
-                      content: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            TextButton(
-                              onPressed: () async{
-                                Navigator.pop(context);
-                                dtype='Accident';
-                                await FirebaseFirestore.instance
-                                    .collection('Alerts')
-                                    .doc(alert.alertId)
-                                    .update({"etype": "${dtype}"});
-                              },
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.red.shade100,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text("Accident"),
-                            ),
-                            const SizedBox(width: 10),
-                            TextButton(
-                              onPressed: () async{
-                                Navigator.pop(context);
-                                dtype='Threat';
-                                await FirebaseFirestore.instance
-                                    .collection('Alerts')
-                                    .doc(alert.alertId)
-                                    .update({"etype": "${dtype}"});
-                              },
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.red.shade100,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text("Threat"),
-                            ),
-                            const SizedBox(width: 10),
-                            TextButton(
-                              onPressed: () async{
-                                Navigator.pop(context);
-                                dtype='Medical';
-                                await FirebaseFirestore.instance
-                                    .collection('Alerts')
-                                    .doc(alert.alertId)
-                                    .update({"etype": "${dtype}"});
-                              },
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.red.shade100,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text("Medical"),
-                            ),
-                          ],
-                        ),
-                      ),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    );
-                  },
-                );
-
-
-
-
-
               }
-              else if(user.isInDanger==true){
-               final alert_data= await FirebaseFirestore.instance.collection('Alerts').where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid).where('status',isEqualTo: 'danger').get();
-               AlertModel alert2=AlertModel.fromJson(alert_data.docs.first.data() as Map<String, dynamic>, alert_data.docs.first.id);
-               if(alert2.severity<3){
-                 await FirebaseFirestore.instance.collection('Alerts').doc(alert2.alertId).update({
-                   'severity': FieldValue.increment(1),
-                 });
-
-
-                 //alert distribution for sev ++
-                 int notified=0;
-
-                 final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
-                 for (var doc in querySnapshot.docs) {
-                   final data = doc.data();
-                   final fcm = data['fcmToken'];
-                   UserModel ouser = UserModel.fromJson(data);
-                   final cloc = user.location;
-                   final uloc = ouser.location;
-
-                   final distance =calculateDistance(
-                       LatLng(cloc?['latitude'], cloc?['longitude'],),
-                       LatLng(uloc?['latitude'], uloc?['longitude'],));
-                   print('severity: ${alert2.severity}, user: ${ouser.name}, distance: $distance');
-
-                   if (ouser.id != FirebaseAuth.instance.currentUser?.uid && ouser.admin==false && ouser.isInDanger==false) {
-                     if(500<distance && distance<10001 && alert2.severity==1){
-
-                       FirebaseApi().sendNotification(token: fcm,
-                           title: 'Alert',
-                           body: 'help meeeeeeeeeeeeee',
-                           userId: ouser.id,
-                           latitude: _currentPosition?.latitude,
-                           longitude: _currentPosition?.longitude);
-                       print('alert sent to ${ouser.name}, distance: $distance');
-                       notified=notified+1;
-                     }
-                     if( 10000<distance && distance<15000 && alert2.severity==2){
-
-                       FirebaseApi().sendNotification(token: fcm,
-                           title: 'Alert',
-                           body: 'help meeeeeeeeeeeeee',
-                           userId: ouser.id,
-                           latitude: _currentPosition?.latitude,
-                           longitude: _currentPosition?.longitude);
-                       print('alert sent to ${ouser.name}, distance: $distance');
-                       notified=notified+1;
-                     }
-                   }
-                 }
-                 print('notified: $notified');
-
-                 await FirebaseFirestore.instance
-                     .collection('Alerts')
-                     .doc(alert2.alertId)
-                     .update({"notified":notified});
-
-
-
-                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity increased to ${alert2.severity+1}")));
-               }
-               else{
-                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity already at maximum")));
-               }
-              }
-              else
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Something went wrong")));
 
             }
             if(index==1){
-
+              AlertSystem();
             }
+
             if(index==2){
               Navigator.of(context).push(MaterialPageRoute(builder: (context) => AlertHistoryScreen()));
             }
