@@ -11,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:resqmob/Class%20Models/sms.dart';
+import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/homepage/view%20active%20alerts.dart';
 import 'package:resqmob/pages/homepage/view%20my%20alerts.dart';
@@ -23,7 +24,10 @@ import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import 'package:resqmob/backend/api keys.dart';
 import '../../backend/firebase config/firebase message.dart';
-import '../../modules/distance.dart'; // Assuming this path is correct
+import '../../modules/coordinate to location.dart';
+import '../../modules/distance.dart';
+import '../community/community.dart';
+import 'drawer.dart'; // Assuming this path is correct
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -48,6 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
   StreamSubscription<RemoteMessage>? _notificationSub;
   StreamSubscription<DocumentSnapshot>? _alertListener;
   StreamSubscription<QuerySnapshot>? _alertMarkerListener;
+  UserModel? currentUser;
   var imageLink;
 
   LatLng? _navigationDestination;
@@ -93,6 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print(_navigationDestination);
       // ⬇ Live update polyline
       if (_navigationDestination != null) {
+
         print('2');
         await _getDirections(
           LatLng(pos.latitude, pos.longitude),
@@ -149,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         }
         imageLink = doc.get("profileImageUrl");
-
+        currentUser=UserModel.fromJson(doc.data() as Map<String, dynamic>);
       })
           .catchError((e) => print('Error: $e'));
     }catch(e){
@@ -560,6 +566,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
     UserModel user=UserModel.fromJson(data.data()!);
     final length=await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length+10);
+    String address= await getAddressFromLatLng(_currentPosition!.latitude,_currentPosition!.longitude);
     final alert= AlertModel(
         alertId: length.toString(),
         userId: user.id,
@@ -568,7 +575,7 @@ class _MyHomePageState extends State<MyHomePage> {
         severity: 1,
         status: 'danger',
         timestamp: Timestamp.now(),
-        address: user.address,
+        address: address,
         message: 'help',
         location: {
           'latitude': _currentPosition!.latitude,
@@ -665,6 +672,22 @@ class _MyHomePageState extends State<MyHomePage> {
         isDanger = true;
       });
 
+
+      //community post
+      final post = PostModel(id: alert.alertId,
+          userId: alert.userId,
+          userName: alert.userName,
+          userProfileImage: '',
+          content: 'Emergency Alert for ${alert.userName} at ${alert.address} with severity ${alert.severity} and type ${alert.etype}',
+          temp: true,
+          createdAt: alert.timestamp.toDate(),
+          upvotes: [],
+          commentCount: 0);
+      await FirebaseFirestore.instance.collection('social').doc(alert.alertId).set(post.toJson());
+      print('community post created');
+
+
+
       //additional danger info
 
       var dtype='';
@@ -686,6 +709,11 @@ class _MyHomePageState extends State<MyHomePage> {
                           .collection('Alerts')
                           .doc(alert.alertId)
                           .update({"etype": "${dtype}"});
+
+
+                      await FirebaseFirestore.instance.collection('social').doc(alert.alertId).update({
+                        'content': 'Emergency Alert for ${alert.userName} at ${alert.address} with severity ${alert.severity} and type ${dtype}',
+                      });
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.red.shade100,
@@ -704,6 +732,11 @@ class _MyHomePageState extends State<MyHomePage> {
                           .collection('Alerts')
                           .doc(alert.alertId)
                           .update({"etype": "${dtype}"});
+
+
+                      await FirebaseFirestore.instance.collection('social').doc(alert.alertId).update({
+                        'content': 'Emergency Alert for ${alert.userName} at ${alert.address} with severity ${alert.severity} and type ${dtype}',
+                      });
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.red.shade100,
@@ -722,6 +755,10 @@ class _MyHomePageState extends State<MyHomePage> {
                           .collection('Alerts')
                           .doc(alert.alertId)
                           .update({"etype": "${dtype}"});
+
+                      await FirebaseFirestore.instance.collection('social').doc(alert.alertId).update({
+                        'content': 'Emergency Alert for ${alert.userName} at ${alert.address} with severity ${alert.severity} and type ${dtype}',
+                      });
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.red.shade100,
@@ -738,6 +775,7 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         },
       );
+
 
 
 
@@ -802,6 +840,20 @@ class _MyHomePageState extends State<MyHomePage> {
             .update({"notified":notified});
 
 
+        //community post update
+        final post = PostModel(id: alert2.alertId,
+            userId: alert2.userId,
+            userName: alert2.userName,
+            userProfileImage: '',
+            content: 'Emergency Alert for ${alert.userName} at ${alert2.address} with severity ${alert2.severity+1} and type ${alert2.etype}',
+            temp: true,
+            createdAt: alert2.timestamp.toDate(),
+            upvotes: [],
+            commentCount: 0);
+        await FirebaseFirestore.instance.collection('social').doc(alert2.alertId).set(post.toJson());
+        print('community post updated');
+
+
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text( "Severity increased to ${alert2.severity+1}")));
       }
@@ -820,131 +872,128 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
 
       appBar: AppBar(
-        title: const Text('View All User'),
+        title: const Text('ResQmob',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-
-          PopupMenuButton<int>(
-            color: Colors.white,
-            offset: const Offset(0, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: Colors.grey.shade200, width: 1),
-            ),
-            elevation: 2,
-            itemBuilder: (context) => [
-              PopupMenuItem<int>(
-                value: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: const SizedBox(
-                  width: 120,
-                  child: Row(
-                    children: [
-                      Text("Your Profile",
-                          style: TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
-              PopupMenuItem<int>(
-                value: 3,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: const SizedBox(
-                  width: 120,
-                  child: Row(
-                    children: [
-                      Text("Social",
-                          style: TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
-              PopupMenuItem<int>(
-                value: 1,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: const SizedBox(
-                  width: 120,
-                  child: Row(
-                    children: [
-
-                      Text("Sign Out",
-                          style: TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 0) {
-                if (FirebaseAuth.instance.currentUser != null) {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => profile(
-                      uid: FirebaseAuth.instance.currentUser!.uid
-                    )
-                  ));
-                }
-              } else if (value == 1) {
-                Authentication().signout(context);
-              }
-              else if (value == 3) {
-                final userId = FirebaseAuth.instance.currentUser?.uid;
-
-                if (userId != null) {
-
-                  FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
-                    print(doc.data());
-                    if (doc.exists) {
-                      print(doc.data());
-                      UserModel user = UserModel.fromJson(doc.data()!);
-                      Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => SocialScreen(currentUser: user)
-                      ));
-                    } else {
-                      debugPrint("User document does not exist.");
-                    }
-                  }).catchError((error) {
-                    debugPrint("Error fetching user: $error");
-                  });
-                } else {
-                  debugPrint("User not logged in.");
-                }
-              }
-            },
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: CircleAvatar(
-                radius: 20,
-                backgroundImage: (imageLink != null && imageLink.isNotEmpty)
-                    ? NetworkImage(imageLink)
-                    : null,
-                backgroundColor: Colors.grey[300],
-                child: (imageLink == null || imageLink.isEmpty)
-                    ? Icon(Icons.person, size: 20, color: Colors.white)
-                    : null,
-              ),
-            ),
-          ),
-
-      const SizedBox(width: 8),
-      ],
+      //   actions: [
+      //
+      //     PopupMenuButton<int>(
+      //       color: Colors.white,
+      //       offset: const Offset(0, 50),
+      //       shape: RoundedRectangleBorder(
+      //         borderRadius: BorderRadius.circular(8),
+      //         side: BorderSide(color: Colors.grey.shade200, width: 1),
+      //       ),
+      //       elevation: 2,
+      //       itemBuilder: (context) => [
+      //         PopupMenuItem<int>(
+      //           value: 0,
+      //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      //           child: const SizedBox(
+      //             width: 120,
+      //             child: Row(
+      //               children: [
+      //                 Text("Your Profile",
+      //                     style: TextStyle(fontSize: 14)),
+      //               ],
+      //             ),
+      //           ),
+      //         ),
+      //         PopupMenuItem<int>(
+      //           value: 3,
+      //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      //           child: const SizedBox(
+      //             width: 120,
+      //             child: Row(
+      //               children: [
+      //                 Text("Social",
+      //                     style: TextStyle(fontSize: 14)),
+      //               ],
+      //             ),
+      //           ),
+      //         ),
+      //         PopupMenuItem<int>(
+      //           value: 1,
+      //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      //           child: const SizedBox(
+      //             width: 120,
+      //             child: Row(
+      //               children: [
+      //
+      //                 Text("Sign Out",
+      //                     style: TextStyle(fontSize: 14)),
+      //               ],
+      //             ),
+      //           ),
+      //         ),
+      //       ],
+      //       onSelected: (value) {
+      //         if (value == 0) {
+      //           if (FirebaseAuth.instance.currentUser != null) {
+      //             Navigator.push(context, MaterialPageRoute(
+      //               builder: (context) => profile(
+      //                 uid: FirebaseAuth.instance.currentUser!.uid
+      //               )
+      //             ));
+      //           }
+      //         } else if (value == 1) {
+      //           Authentication().signout(context);
+      //         }
+      //         else if (value == 3) {
+      //           final userId = FirebaseAuth.instance.currentUser?.uid;
+      //
+      //           if (userId != null) {
+      //
+      //             FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
+      //               print(doc.data());
+      //               if (doc.exists) {
+      //                 print(doc.data());
+      //                 UserModel user = UserModel.fromJson(doc.data()!);
+      //                 Navigator.push(context, MaterialPageRoute(
+      //                     builder: (context) => SocialScreen(currentUser: user)
+      //                 ));
+      //               } else {
+      //                 debugPrint("User document does not exist.");
+      //               }
+      //             }).catchError((error) {
+      //               debugPrint("Error fetching user: $error");
+      //             });
+      //           } else {
+      //             debugPrint("User not logged in.");
+      //           }
+      //         }
+      //       },
+      //       child: Container(
+      //         margin: const EdgeInsets.all(8),
+      //         decoration: BoxDecoration(
+      //           shape: BoxShape.circle,
+      //           border: Border.all(
+      //             color: Theme.of(context).dividerColor.withOpacity(0.2),
+      //             width: 1,
+      //           ),
+      //         ),
+      //         child: CircleAvatar(
+      //           radius: 20,
+      //           backgroundImage: (imageLink != null && imageLink.isNotEmpty)
+      //               ? NetworkImage(imageLink)
+      //               : null,
+      //           backgroundColor: Colors.grey[300],
+      //           child: (imageLink == null || imageLink.isEmpty)
+      //               ? Icon(Icons.person, size: 20, color: Colors.white)
+      //               : null,
+      //         ),
+      //       ),
+      //     ),
+      //
+      // const SizedBox(width: 8),
+      // ],
       ),
 
-      drawer: Drawer(
-
-      ),
+      drawer: AppDrawer(currentUser: currentUser,),
 
       body: Stack(
         children: [
-
           GoogleMap(
             style:
             '''
@@ -1243,13 +1292,24 @@ class _MyHomePageState extends State<MyHomePage> {
           heroTag: "test",
           onPressed: ()async{
 
-
+            PostModel p= PostModel(
+              id: '1',
+              userId: 'userId',
+              userName: 'userName',
+              userProfileImage: 'userProfileImage',
+              content:'content',
+              createdAt:Timestamp.now().toDate(),
+              upvotes: [],
+              commentCount:  0,
+              temp: true,
+            );
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => SocialScreen(currentUser: currentUser!,temppost: p)));
           },
           backgroundColor: Colors.red,
           child: Text("test"),
         ),
           const SizedBox(height: 16),
-          FloatingActionButton(
+          if(isDanger) FloatingActionButton(
             heroTag: "safe",
             onPressed: () async {
               try {
@@ -1280,6 +1340,39 @@ class _MyHomePageState extends State<MyHomePage> {
                   await doc.reference.update({'status': 'safe','safeTime': Timestamp.now()});
                 }
 
+
+                //Temp community post
+                String postId=alertSnapshot.docs.first.id;
+                try {
+
+                  final postRef = FirebaseFirestore.instance.collection('social').doc(postId);
+                  final commentsRef = postRef.collection('comments');
+
+                  final commentsSnapshot = await commentsRef.get();
+
+                  final batch = FirebaseFirestore.instance.batch();
+
+                  for (final doc in commentsSnapshot.docs) {
+                    batch.delete(doc.reference);
+                  }
+                  batch.delete(postRef);
+
+                  await batch.commit();
+
+                  print('Successfully deleted post $postId and all its comments');
+
+
+
+
+
+                } catch (e) {
+                  print('Error deleting post and comments: $e');
+                  rethrow; // Re-throw to handle in calling code
+                }
+
+
+
+
                 // Optional: Show a snackbar confirmation
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1294,10 +1387,7 @@ class _MyHomePageState extends State<MyHomePage> {
               }
             },
             backgroundColor: Colors.blue,
-            child: const Icon(
-              Icons.whatshot,
-              color: Colors.white,
-            ),
+            child: Text('Safe'),
           ),
 
           const SizedBox(height: 16),
