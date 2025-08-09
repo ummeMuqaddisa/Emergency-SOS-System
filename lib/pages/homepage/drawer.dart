@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/pages/homepage/safe%20road.dart';
+import 'package:resqmob/pages/profile/profile.dart';
 
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import '../../test.dart';
+import '../admin/resources/police stations.dart';
+import '../alert listing/my responded alert.dart';
 import '../community/community.dart';
 import 'homepage.dart';
 
@@ -21,35 +24,43 @@ class AppDrawer extends StatelessWidget {
       child: Column(
         children: [
           // Header with user info
-          UserAccountsDrawerHeader(
-            accountName: Text(
-              currentUser?.name ?? 'Guest',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+          InkWell(
+            onTap: (){
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => profile(uid: currentUser!.id,)),
+              );
+            },
+            child: UserAccountsDrawerHeader(
+              accountName: Text(
+                currentUser?.name ?? 'Guest',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            accountEmail: Text(
-              currentUser?.email ?? 'No email',
-              style: const TextStyle(fontSize: 14),
-            ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: currentUser?.profileImageUrl != null
-                  ? NetworkImage(currentUser!.profileImageUrl!)
-                  : null,
-              child: currentUser?.profileImageUrl == null
-                  ? const Icon(Icons.person, size: 40, color: Colors.blue)
-                  : null,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              image: DecorationImage(
-                image: const NetworkImage('https://imgv3.fotor.com/images/share/Free-blue-gradient-pattern-background-from-Fotor.jpg'),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.blue.withOpacity(0.7),
-                  BlendMode.dstATop,
+              accountEmail: Text(
+                currentUser?.email ?? 'No email',
+                style: const TextStyle(fontSize: 14),
+              ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                backgroundImage: currentUser?.profileImageUrl != null
+                    ? NetworkImage(currentUser!.profileImageUrl!)
+                    : null,
+                child: currentUser?.profileImageUrl == null
+                    ? const Icon(Icons.person, size: 40, color: Colors.blue)
+                    : null,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                image: DecorationImage(
+                  image: const NetworkImage('https://imgv3.fotor.com/images/share/Free-blue-gradient-pattern-background-from-Fotor.jpg'),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.blue.withOpacity(0.7),
+                    BlendMode.dstATop,
+                  ),
                 ),
               ),
             ),
@@ -94,6 +105,17 @@ class AppDrawer extends StatelessWidget {
                     );
 
                   },
+                ),_buildDrawerItem(
+                  icon: Icons.navigation_outlined,
+                  title: 'Responded',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => RespondedAlertsScreen()),
+                    );
+
+                  },
                 ),
                 _buildDrawerItem(
                   icon: Icons.emergency,
@@ -108,6 +130,10 @@ class AppDrawer extends StatelessWidget {
                   title: 'Nearby Police Stations',
                   onTap: () {
                     Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AddPoliceStations()),
+                    );
                     // Navigate to police stations screen
                   },
                 ),

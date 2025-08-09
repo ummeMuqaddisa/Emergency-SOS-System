@@ -13,8 +13,8 @@ import 'package:http/http.dart' as http;
 import 'package:resqmob/Class%20Models/sms.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
-import 'package:resqmob/pages/homepage/view%20active%20alerts.dart';
-import 'package:resqmob/pages/homepage/view%20my%20alerts.dart';
+import 'package:resqmob/pages/alert%20listing/view%20active%20alerts.dart';
+import 'package:resqmob/pages/alert%20listing/view%20my%20alerts.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:resqmob/test.dart';
 
@@ -27,7 +27,7 @@ import '../../backend/firebase config/firebase message.dart';
 import '../../modules/coordinate to location.dart';
 import '../../modules/distance.dart';
 import '../community/community.dart';
-import 'drawer.dart'; // Assuming this path is correct
+import 'drawer.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -75,9 +75,11 @@ class _MyHomePageState extends State<MyHomePage> {
       if (!mounted) return;
 
       if (message.notification != null) {
+        print('messege: ${message.notification!.body}, ${message.notification!.title}, ${message.data}');
         final title = message.notification?.title ?? 'Notification';
         final body = message.notification?.body ?? '';
         final data = message.data;
+        print(data.toString());
 
         _showNotificationDialog(title, body, data);
       }
@@ -109,40 +111,6 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
 
-    // _positionStream = Geolocator.getPositionStream(
-    //   locationSettings: LocationSettings(
-    //     accuracy: LocationAccuracy.bestForNavigation,
-    //     distanceFilter: 1,
-    //   ),
-    // ).listen((Position pos) async {
-    //
-    //
-    // //   final location = { 'location': {
-    // //     'latitude': pos.latitude,
-    // //     'longitude': pos.longitude,
-    // //     'timestamp': Timestamp.now(),
-    // //   }
-    // // };
-    // // try {
-    // //   await FirebaseFirestore.instance
-    // //       .collection('Users')
-    // //       .doc(FirebaseAuth.instance.currentUser!.uid)
-    // //       .set(location, SetOptions(merge: true)); // merge to avoid overwriting other fields
-    // // } catch (e) {
-    // //   print('Error updating location: $e');
-    // // }
-    //
-    //
-    //
-    //
-    //
-    //
-    //   animateTo(pos);
-    //   setState(() {
-    //     _currentPosition = pos;
-    //   });
-    // });
-
     try{
       FirebaseFirestore.instance
           .collection('Users')
@@ -158,6 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
         currentUser=UserModel.fromJson(doc.data() as Map<String, dynamic>);
       })
           .catchError((e) => print('Error: $e'));
+
     }catch(e){
       print(e);
     }
@@ -314,6 +283,16 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       );
+
+      FirebaseFirestore.instance
+          .collection('Users')
+          .doc(FirebaseAuth.instance.currentUser!.uid).update({
+        'location': {
+          'latitude': _currentPosition?.latitude,
+          'longitude': _currentPosition?.longitude,
+          'timestamp': Timestamp.now(),
+        }
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -517,7 +496,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       Navigator.pop(context);
                       if (_currentPosition != null) {
 
-
                         final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(data['alertId']);
                         await alertRef.set({
                           'responders': [],
@@ -525,7 +503,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
                         await alertRef.update({
-                          'responders': FieldValue.arrayUnion([userId]),
+                          'responders': FieldValue.arrayUnion([currentUser!.id]),
                         });
 
                         print("User $userId added to responders of alert ${data['alertId']}");
@@ -559,6 +537,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
+  //main alert function
 
   void AlertSystem() async{
 
@@ -614,10 +593,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
             FirebaseApi().sendNotification(token: fcm,
                 title: 'Alert',
-                body: 'help meeeeeeeeeeeeee',
+                body: 'help!!!',
                 userId: ouser.id,
                 latitude: _currentPosition?.latitude,
-                longitude: _currentPosition?.longitude);
+                longitude: _currentPosition?.longitude,
+                alertId: alert.alertId
+            );
             print('alert sent to ${ouser.name}, distance: $distance');
             notified=notified+1;
           }
@@ -792,7 +773,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
         //alert distribution for sev ++
-        int notified=0;
+        int notified=alert2.notified;
 
         final querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
         for (var doc in querySnapshot.docs) {
@@ -812,10 +793,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
               FirebaseApi().sendNotification(token: fcm,
                   title: 'Alert',
-                  body: 'help meeeeeeeeeeeeee',
+                  body: 'help!!!',
                   userId: ouser.id,
                   latitude: _currentPosition?.latitude,
-                  longitude: _currentPosition?.longitude);
+                  longitude: _currentPosition?.longitude,
+                  alertId: alert2.alertId
+              );
               print('alert sent to ${ouser.name}, distance: $distance');
               notified=notified+1;
             }
@@ -866,129 +849,264 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 
+
+  //ui test
+  Widget _buildCustomAppBar() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 16,
+          left: 20,
+          right: 20,
+          bottom: 16,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white.withOpacity(0.9),
+              Colors.white.withOpacity(0.7),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: Row(
+          children: [
+            Builder(
+              builder: (context) {
+                return GestureDetector(
+                  onTap: () => Scaffold.of(context).openDrawer(),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.menu_rounded,
+                      color: Color(0xFF1F2937),
+                      size: 24,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ResQmob',
+                    style: TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'Emergency Response System',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => profile(uid: FirebaseAuth.instance.currentUser?.uid,)),
+                );
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundImage: (imageLink != null && imageLink.isNotEmpty)
+                            ? NetworkImage(imageLink)
+                            : null,
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        child: (imageLink == null || imageLink.isEmpty)
+                            ? const Icon(Icons.person, size: 16, color: Color(0xFF6B7280))
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlertOverlay() {
+    return Positioned(
+      top: 130,
+      left: 20,
+      right: 20,
+      child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFEF4444).withOpacity(0.95),
+                  const Color(0xFFDC2626).withOpacity(0.95),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withOpacity(0.3 + 0.2 *1),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('Alerts')
+                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('status', isEqualTo: 'danger')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("No active alerts", style: TextStyle(color: Colors.white)));
+                }
+                final doc = snapshot.data!.docs.first;
+                final alert = AlertModel.fromJson(doc.data() as Map<String, dynamic>, doc.id);
+                final responderCount = alert.responders?.length ?? 0;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.warning_rounded, color: Colors.white, size: 24),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "EMERGENCY ALERT ACTIVE",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "Level ${alert.severity}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        _buildAlertStat("Type", alert.etype ?? "Unspecified"),
+                        _buildAlertStat("Notified", "${alert.notified}"),
+                        _buildAlertStat("Responding", "$responderCount"),
+                      ],
+                    ),
+                    if (alert.pstation != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        "Informed Police Station: ${alert.pstation}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          )
+
+    );
+  }
+
+  Widget _buildAlertStat(String label, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-
-      appBar: AppBar(
-        title: const Text('ResQmob',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      //   actions: [
-      //
-      //     PopupMenuButton<int>(
-      //       color: Colors.white,
-      //       offset: const Offset(0, 50),
-      //       shape: RoundedRectangleBorder(
-      //         borderRadius: BorderRadius.circular(8),
-      //         side: BorderSide(color: Colors.grey.shade200, width: 1),
-      //       ),
-      //       elevation: 2,
-      //       itemBuilder: (context) => [
-      //         PopupMenuItem<int>(
-      //           value: 0,
-      //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      //           child: const SizedBox(
-      //             width: 120,
-      //             child: Row(
-      //               children: [
-      //                 Text("Your Profile",
-      //                     style: TextStyle(fontSize: 14)),
-      //               ],
-      //             ),
-      //           ),
-      //         ),
-      //         PopupMenuItem<int>(
-      //           value: 3,
-      //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      //           child: const SizedBox(
-      //             width: 120,
-      //             child: Row(
-      //               children: [
-      //                 Text("Social",
-      //                     style: TextStyle(fontSize: 14)),
-      //               ],
-      //             ),
-      //           ),
-      //         ),
-      //         PopupMenuItem<int>(
-      //           value: 1,
-      //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      //           child: const SizedBox(
-      //             width: 120,
-      //             child: Row(
-      //               children: [
-      //
-      //                 Text("Sign Out",
-      //                     style: TextStyle(fontSize: 14)),
-      //               ],
-      //             ),
-      //           ),
-      //         ),
-      //       ],
-      //       onSelected: (value) {
-      //         if (value == 0) {
-      //           if (FirebaseAuth.instance.currentUser != null) {
-      //             Navigator.push(context, MaterialPageRoute(
-      //               builder: (context) => profile(
-      //                 uid: FirebaseAuth.instance.currentUser!.uid
-      //               )
-      //             ));
-      //           }
-      //         } else if (value == 1) {
-      //           Authentication().signout(context);
-      //         }
-      //         else if (value == 3) {
-      //           final userId = FirebaseAuth.instance.currentUser?.uid;
-      //
-      //           if (userId != null) {
-      //
-      //             FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
-      //               print(doc.data());
-      //               if (doc.exists) {
-      //                 print(doc.data());
-      //                 UserModel user = UserModel.fromJson(doc.data()!);
-      //                 Navigator.push(context, MaterialPageRoute(
-      //                     builder: (context) => SocialScreen(currentUser: user)
-      //                 ));
-      //               } else {
-      //                 debugPrint("User document does not exist.");
-      //               }
-      //             }).catchError((error) {
-      //               debugPrint("Error fetching user: $error");
-      //             });
-      //           } else {
-      //             debugPrint("User not logged in.");
-      //           }
-      //         }
-      //       },
-      //       child: Container(
-      //         margin: const EdgeInsets.all(8),
-      //         decoration: BoxDecoration(
-      //           shape: BoxShape.circle,
-      //           border: Border.all(
-      //             color: Theme.of(context).dividerColor.withOpacity(0.2),
-      //             width: 1,
-      //           ),
-      //         ),
-      //         child: CircleAvatar(
-      //           radius: 20,
-      //           backgroundImage: (imageLink != null && imageLink.isNotEmpty)
-      //               ? NetworkImage(imageLink)
-      //               : null,
-      //           backgroundColor: Colors.grey[300],
-      //           child: (imageLink == null || imageLink.isEmpty)
-      //               ? Icon(Icons.person, size: 20, color: Colors.white)
-      //               : null,
-      //         ),
-      //       ),
-      //     ),
-      //
-      // const SizedBox(width: 8),
-      // ],
-      ),
+      backgroundColor: Colors.white,
 
       drawer: AppDrawer(currentUser: currentUser,),
 
@@ -1206,77 +1324,19 @@ class _MyHomePageState extends State<MyHomePage> {
             zoomControlsEnabled: false,
             markers: _markers,
           ),
+          _buildCustomAppBar(),
 
           // red layer when alert is on with alert stat
           if (isDanger)
             IgnorePointer(
               child: Container(
-                color: Colors.red.withOpacity(0.3),
+                color: Colors.red.withOpacity(0.2),
                 height: double.infinity,
                 width: double.infinity,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 70.0, bottom: 370, left: 20, right: 20),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: StreamBuilder(
-                      stream: FirebaseFirestore.instance
-                          .collection('Alerts')
-                          .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid).where('status',isEqualTo: 'danger')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return const Center(child: Text("No active alerts"));
-                        }
-
-                        final doc = snapshot.data!.docs.first;
-                        final alert = AlertModel.fromJson(doc.data() as Map<String, dynamic>, doc.id);
-                        final responderCount = alert.responders?.length ?? 0;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "ALERT ACTIVE",
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "Severity Level: ${alert.severity}",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "Emergency Type: ${alert.etype}",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "Notified Count: ${alert.notified}",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "Responders Count: $responderCount",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "Reported to the Police Station: Vatara",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
               ),
             ),
+          if (isDanger) _buildAlertOverlay(),
+
 
           if (_isLoading)
             const Center(
@@ -1556,85 +1616,509 @@ class _MyHomePageState extends State<MyHomePage> {
     final body = message.notification?.body ?? '';
 
     if (context.mounted) {
-      _showNotificationDialog(title, body, data); // or navigate, etc.
+      _showNotificationDialog(title, body, data);
     }
   }
 
-  void _showNotificationDialog(String title, String body, Map<String, dynamic> data) {
+
+  void _showNotificationDialog(String title, String body, Map<String, dynamic> data) async {
+
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(body),
-                const SizedBox(height: 12),
-                if (data.isNotEmpty) ...[
-                  const Text('Additional Data:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ...data.entries.map((entry) => Text('${entry.key}: ${entry.value}')),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-
-                final userId = FirebaseAuth.instance.currentUser?.uid;
-                final double? lat = double.tryParse(data['latitude'].toString());
-                final double? lng = double.tryParse(data['longitude'].toString());
-                final String? alertId = data['alertId'];
-                if (userId != null && alertId != null) {
-                  try {
-                    final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(alertId);
-                    await alertRef.set({
-                      'responders': [],
-                    }, SetOptions(merge: true));
-
-
-                    await alertRef.update({
-                      'responders': FieldValue.arrayUnion([userId]),
-                    });
-
-                    print("User $userId added to responders of alert $alertId");
-
-
-                  } catch (e) {
-                    print("Failed to add responder: $e");
-                  }
-                } else {
-                  print("Missing userId or alertId");
-                }
-
-                if (lat != null && lng != null && _currentPosition != null) {
-                  print("Getting directions...");
-                  _navigationDestination = LatLng(lat, lng);
-                  await _getDirections(
-                    LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                    LatLng(lat, lng),
-                  );
-                  _checkDanger(alertId!);
-                } else {
-                  print("Invalid or missing coordinates.");
-                }
-              },
-
-              child: const Text('Help'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+    print(data.toString());
+    try {
+      final alertSnapshot = await FirebaseFirestore.instance
+          .collection('Alerts')
+          .doc(data['alertId'])
+          .get();
+
+      if (!alertSnapshot.exists || alertSnapshot.data() == null) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Alert not found')),
+        );
+        return;
+      }
+
+      final alert = AlertModel.fromJson(
+        alertSnapshot.data() as Map<String, dynamic>,
+        alertSnapshot.id,
+      );
+
+      Navigator.of(context).pop();
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    body,
+                    style: const TextStyle(fontSize: 16, color: Color(0xFF374151)),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(children: [
+                    const Text("Name: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.userName ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
+                  ]),
+                  Row(children: [
+                    const Text("Location: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.address ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
+                  ]),
+
+                  Row(children: [
+                    const Text("Message: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.message ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
+                  ]),
+
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: Color(0xFF6B7280)),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+
+                  final userId = FirebaseAuth.instance.currentUser?.uid;
+                  final double? lat = double.tryParse(
+                    data['latitude']?.toString() ?? alert.location?['latitude']?.toString() ?? '',
+                  );
+                  final double? lng = double.tryParse(
+                    data['longitude']?.toString() ?? alert.location?['longitude']?.toString() ?? '',
+                  );
+                  final String? alertId = data['alertId'] ?? alert.alertId;
+
+                  if (userId != null && alertId != null) {
+                    try {
+                      final alertRef = FirebaseFirestore.instance.collection('Alerts').doc(alertId);
+                      await alertRef.set({'responders': []}, SetOptions(merge: true));
+                      await alertRef.update({
+                        'responders': FieldValue.arrayUnion([userId]),
+                      });
+                    } catch (e) {
+                      print("Failed to add responder: $e");
+                    }
+                  }
+
+                  if (lat != null && lng != null && _currentPosition != null) {
+                    _navigationDestination = LatLng(lat, lng);
+                    await _getDirections(
+                      LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                      LatLng(lat, lng),
+                    );
+                    _checkDanger(alertId!);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Help'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      Navigator.of(context).pop(); // remove loader
+      print("Error fetching alert: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load alert')),
+      );
+    }
   }
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  // GoogleMapController? _mapController;
+  // Position? _currentPosition;
+  // bool _isLoading = false;
+  // final Set<Marker> _markers = {};
+  // StreamSubscription<Position>? _positionStream;
+  // StreamSubscription<RemoteMessage>? _notificationSub;
+  // StreamSubscription<DocumentSnapshot>? _alertListener;
+  // StreamSubscription<QuerySnapshot>? _alertMarkerListener;
+  // UserModel? currentUser;
+  // var imageLink;
+  // LatLng? _navigationDestination;
+  // bool isDanger = false;
+  // final Set<Polyline> _polylines = {};
+  // late AnimationController _pulseController;
+  // late AnimationController _slideController;
+  // bool _showQuickActions = false;
+  //
+  // @override
+  //
+  //
+  //
+  //
+  //
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     backgroundColor: const Color(0xFFF8FAFC),
+  //     body: Stack(
+  //       children: [
+  //         // Map
+  //
+  //
+  //         // Custom App Bar
+  //         _buildCustomAppBar(),
+  //
+  //         // Alert Overlay
+  //         if (isDanger) _buildAlertOverlay(),
+  //
+  //         // Quick Actions
+  //         _buildQuickActions(),
+  //
+  //         // Loading Indicator
+  //         if (_isLoading)
+  //           const Center(
+  //             child: CircularProgressIndicator(
+  //               color: Color(0xFF3B82F6),
+  //               strokeWidth: 3,
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //     bottomNavigationBar: _buildBottomNavigation(),
+  //   );
+  // }
+  //
+
+  // Widget _buildAlertOverlay() {
+  //   return Positioned(
+  //     top: 120,
+  //     left: 20,
+  //     right: 20,
+  //     child: AnimatedBuilder(
+  //       animation: _pulseController,
+  //       builder: (context, child) {
+  //         return Container(
+  //           padding: const EdgeInsets.all(20),
+  //           decoration: BoxDecoration(
+  //             gradient: LinearGradient(
+  //               colors: [
+  //                 const Color(0xFFEF4444).withOpacity(0.95),
+  //                 const Color(0xFFDC2626).withOpacity(0.95),
+  //               ],
+  //             ),
+  //             borderRadius: BorderRadius.circular(16),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: const Color(0xFFEF4444).withOpacity(0.3 + 0.2 * _pulseController.value),
+  //                 blurRadius: 20,
+  //                 spreadRadius: 5,
+  //               ),
+  //             ],
+  //           ),
+  //           child: StreamBuilder(
+  //             stream: FirebaseFirestore.instance
+  //                 .collection('Alerts')
+  //                 .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+  //                 .where('status', isEqualTo: 'danger')
+  //                 .snapshots(),
+  //             builder: (context, snapshot) {
+  //               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+  //                 return const Center(child: Text("No active alerts", style: TextStyle(color: Colors.white)));
+  //               }
+  //               final doc = snapshot.data!.docs.first;
+  //               final alert = AlertModel.fromJson(doc.data() as Map<String, dynamic>, doc.id);
+  //               final responderCount = alert.responders?.length ?? 0;
+  //
+  //               return Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Row(
+  //                     children: [
+  //                       const Icon(Icons.warning_rounded, color: Colors.white, size: 24),
+  //                       const SizedBox(width: 12),
+  //                       const Expanded(
+  //                         child: Text(
+  //                           "EMERGENCY ALERT ACTIVE",
+  //                           style: TextStyle(
+  //                             fontSize: 18,
+  //                             fontWeight: FontWeight.w800,
+  //                             color: Colors.white,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       Container(
+  //                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //                         decoration: BoxDecoration(
+  //                           color: Colors.white.withOpacity(0.2),
+  //                           borderRadius: BorderRadius.circular(8),
+  //                         ),
+  //                         child: Text(
+  //                           "Level ${alert.severity}",
+  //                           style: const TextStyle(
+  //                             color: Colors.white,
+  //                             fontSize: 12,
+  //                             fontWeight: FontWeight.w700,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   const SizedBox(height: 16),
+  //                   Row(
+  //                     children: [
+  //                       _buildAlertStat("Type", alert.etype ?? "Emergency"),
+  //                       _buildAlertStat("Notified", "${alert.notified}"),
+  //                       _buildAlertStat("Responding", "$responderCount"),
+  //                     ],
+  //                   ),
+  //                   if (alert.pstation != null) ...[
+  //                     const SizedBox(height: 12),
+  //                     Text(
+  //                       "Police Station: ${alert.pstation}",
+  //                       style: const TextStyle(
+  //                         color: Colors.white,
+  //                         fontSize: 14,
+  //                         fontWeight: FontWeight.w500,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ],
+  //               );
+  //             },
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
+  //
+  // Widget _buildAlertStat(String label, String value) {
+  //   return Expanded(
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           label,
+  //           style: TextStyle(
+  //             color: Colors.white.withOpacity(0.8),
+  //             fontSize: 12,
+  //             fontWeight: FontWeight.w500,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 2),
+  //         Text(
+  //           value,
+  //           style: const TextStyle(
+  //             color: Colors.white,
+  //             fontSize: 16,
+  //             fontWeight: FontWeight.w700,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+  //
+  //
+  //
+  // Widget _buildBottomNavigation() {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.1),
+  //           blurRadius: 20,
+  //           offset: const Offset(0, -5),
+  //         ),
+  //       ],
+  //     ),
+  //     child: SafeArea(
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+  //         child: Row(
+  //           children: [
+  //             _buildNavItem(
+  //               icon: Icons.crisis_alert_outlined,
+  //               label: 'Active Alerts',
+  //               onTap: () async {
+  //                 final result = await Navigator.push(
+  //                   context,
+  //                   MaterialPageRoute(
+  //                     builder: (context) => ViewActiveAlertsScreen(
+  //                       currentPosition: _currentPosition,
+  //                     ),
+  //                   ),
+  //                 );
+  //                 if (result != null && result['navigate'] == true) {
+  //                   final destination = result['destination'];
+  //                   final alertData = result['alertData'] as Map<String, dynamic>;
+  //                   _navigationDestination = LatLng(destination['latitude'], destination['longitude']);
+  //                   if (_currentPosition != null) {
+  //                     await _getDirections(
+  //                       LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+  //                       _navigationDestination!,
+  //                     );
+  //                     _checkDanger(alertData['alertId']);
+  //                   }
+  //                 }
+  //               },
+  //             ),
+  //
+  //             const SizedBox(width: 20),
+  //
+  //             // Emergency Button
+  //             Expanded(
+  //               child: GestureDetector(
+  //                 onTap: AlertSystem,
+  //                 child: AnimatedBuilder(
+  //                   animation: _pulseController,
+  //                   builder: (context, child) {
+  //                     return Container(
+  //                       height: 64,
+  //                       decoration: BoxDecoration(
+  //                         gradient: LinearGradient(
+  //                           colors: [
+  //                             const Color(0xFFEF4444),
+  //                             const Color(0xFFDC2626),
+  //                           ],
+  //                         ),
+  //                         borderRadius: BorderRadius.circular(20),
+  //                         boxShadow: [
+  //                           BoxShadow(
+  //                             color: const Color(0xFFEF4444).withOpacity(0.4 + 0.2 * _pulseController.value),
+  //                             blurRadius: 20,
+  //                             spreadRadius: 2,
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       child: Row(
+  //                         mainAxisAlignment: MainAxisAlignment.center,
+  //                         children: [
+  //                           Icon(
+  //                             isDanger ? Icons.add_alert_rounded : Icons.emergency_rounded,
+  //                             color: Colors.white,
+  //                             size: 28,
+  //                           ),
+  //                           const SizedBox(width: 12),
+  //                           Text(
+  //                             isDanger ? 'INCREASE ALERT' : 'EMERGENCY',
+  //                             style: const TextStyle(
+  //                               color: Colors.white,
+  //                               fontSize: 16,
+  //                               fontWeight: FontWeight.w800,
+  //                               letterSpacing: 0.5,
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   },
+  //                 ),
+  //               ),
+  //             ),
+  //
+  //             const SizedBox(width: 20),
+  //
+  //             _buildNavItem(
+  //               icon: Icons.history_outlined,
+  //               label: 'History',
+  //               onTap: () {
+  //                 Navigator.of(context).push(
+  //                   MaterialPageRoute(builder: (context) => AlertHistoryScreen()),
+  //                 );
+  //               },
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+  //
+  // Widget _buildNavItem({
+  //   required IconData icon,
+  //   required String label,
+  //   required VoidCallback onTap,
+  // }) {
+  //   return GestureDetector(
+  //     onTap: onTap,
+  //     child: Container(
+  //       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //       decoration: BoxDecoration(
+  //         color: const Color(0xFFF8FAFC),
+  //         borderRadius: BorderRadius.circular(16),
+  //       ),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Icon(
+  //             icon,
+  //             color: const Color(0xFF6B7280),
+  //             size: 24,
+  //           ),
+  //           const SizedBox(height: 4),
+  //           Text(
+  //             label,
+  //             style: const TextStyle(
+  //               color: Color(0xFF6B7280),
+  //               fontSize: 10,
+  //               fontWeight: FontWeight.w600,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }

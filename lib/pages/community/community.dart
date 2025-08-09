@@ -27,7 +27,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
   bool _showFilters = false;
 
 
-  static const Color Orange = Color(0xFFFF4500);
+  static const Color Red = Color(0xFFFA0000);
   static const Color Blue = Color(0xFF0079D3);
   static const Color Gray = Color(0xFF878A8C);
   static const Color LightGray = Color(0xFFF6F7F8);
@@ -73,7 +73,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
           Container(
             width: 32,
             height: 32,
-            decoration: const BoxDecoration(color: Orange, shape: BoxShape.circle),
+            decoration: const BoxDecoration(color: Red, shape: BoxShape.circle),
             child: const Icon(Icons.language, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 8),
@@ -152,7 +152,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
             option.$1,
             _timeFilter == option.$2,
                 () => setState(() => _timeFilter = option.$2),
-            Orange,
+            Red,
           ),
         ))
             .toList(),
@@ -191,7 +191,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundColor: Orange,
+            backgroundColor: Red,
             backgroundImage: widget.currentUser.profileImageUrl.isNotEmpty
                 ? NetworkImage(widget.currentUser.profileImageUrl)
                 : null,
@@ -227,7 +227,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
       stream: _getCombinedPostsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator(color: Orange));
+          return const Center(child: CircularProgressIndicator(color: Red));
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
@@ -350,11 +350,11 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
         children: [
           GestureDetector(
             onTap: () => _toggleUpvote(postId, isUpvoted),
-            child: Icon(Icons.keyboard_arrow_up, color: isUpvoted ? Orange : Gray, size: 24),
+            child: Icon(Icons.keyboard_arrow_up, color: isUpvoted ? Red : Gray, size: 24),
           ),
           Text(
             _formatVoteCount(upvoteCount),
-            style: TextStyle(color: isUpvoted ? Orange : Gray, fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(color: isUpvoted ? Red : Gray, fontSize: 12, fontWeight: FontWeight.w600),
           ),
           const Icon(Icons.keyboard_arrow_down, color: Gray, size: 24),
         ],
@@ -365,7 +365,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
   Widget _buildPostMetadata(PostModel post) {
     return Row(
       children: [
-        const CircleAvatar(radius: 8, backgroundColor: Orange, child: Icon(Icons.language, color: Colors.white, size: 12)),
+        const CircleAvatar(radius: 8, backgroundColor: Red, child: Icon(Icons.language, color: Colors.white, size: 12)),
         const SizedBox(width: 4),
         const Text('r/social', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black)),
         Text(' • Posted by u/${post.userName} • ${_formatDateTime(post.createdAt)}',
@@ -535,7 +535,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
       _postController.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post created successfully!'), backgroundColor: Orange),
+          const SnackBar(content: Text('Post created successfully!'), backgroundColor: Red),
         );
       }
     } catch (e) {
@@ -586,7 +586,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   final TextEditingController _commentController = TextEditingController();
   String? _replyingTo;
 
-  static const Color Orange = Color(0xFFFF4500);
+  static const Color Red = Color(0xFFFA0000);
   static const Color Blue = Color(0xFF0079D3);
   static const Color Gray = Color(0xFF878A8C);
 
@@ -640,7 +640,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Orange));
+          return const Center(child: CircularProgressIndicator(color: Red));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
@@ -708,11 +708,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 children: [
                   GestureDetector(
                     onTap: () => _toggleCommentUpvote(comment.id, isUpvoted),
-                    child: Icon(Icons.keyboard_arrow_up, color: isUpvoted ? Orange : Gray, size: 20),
+                    child: Icon(Icons.keyboard_arrow_up, color: isUpvoted ? Red : Gray, size: 20),
                   ),
                   Text(
                     comment.upvotes.length.toString(),
-                    style: TextStyle(color: isUpvoted ? Orange : Gray, fontSize: 10, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: isUpvoted ? Red : Gray, fontSize: 10, fontWeight: FontWeight.w600),
                   ),
                   const Icon(Icons.keyboard_arrow_down, color: Gray, size: 20),
                 ],
