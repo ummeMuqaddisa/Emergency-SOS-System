@@ -1915,7 +1915,7 @@ class _SafetyMapState extends State<SafetyMap> {
         ),
       );
 
-      _showSnackBar('Location found', Colors.blue);
+     // _showSnackBar('Location found', Colors.blue);
     } catch (e) {
       print('Error getting location: $e');
       _showSnackBar('Could not get location', Colors.red);
@@ -1926,6 +1926,7 @@ class _SafetyMapState extends State<SafetyMap> {
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        behavior: SnackBarBehavior.floating,
         content: Text(message),
         backgroundColor: color,
         duration: const Duration(seconds: 2),

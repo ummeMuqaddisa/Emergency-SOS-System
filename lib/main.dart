@@ -13,7 +13,7 @@ import 'package:resqmob/wrapper.dart';
 import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
 import 'backend/permission handler/background location.dart';
-import 'modules/heatmap.dart';
+
 
 
 
