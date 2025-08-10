@@ -167,7 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  // Method to reinitialize map controller if it becomes invalid
+// map position initialization
   void _reinitializeMapController() {
     if (!mounted) return;
 
@@ -180,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
-  // Ultra-safe method to animate camera with comprehensive error handling
+
   void _safeAnimateTo(Position position) {
     if (!mounted || _isControllerDisposed || !_isMapReady ||
         _mapController == null) return;
@@ -221,7 +221,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Fallback method for camera updates when animation fails
+
   void _fallbackCameraUpdate(LatLng target) {
     if (!mounted || _isControllerDisposed || !_isMapReady ||
         _mapController == null) return;
@@ -235,7 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // Safe method to animate camera to a specific position with timeout
+
   Future<void> _safeAnimateCamera(CameraUpdate cameraUpdate,
       {int timeoutSeconds = 5}) async {
     if (!mounted || _isControllerDisposed || !_isMapReady ||
@@ -269,6 +269,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+
+//load marker & navigating
   Future<void> _loadAllAlertMarkers() async {
     _alertMarkerListener?.cancel();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -323,7 +325,26 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Responder navigation handler
+
+  //for view alert to homepage
+  void handleNavigationRequest(double lat, double lng, String alertId) async {
+    if (_currentPosition != null) {
+      setState(() {
+        _navigationDestination = LatLng(lat, lng);
+      });
+      await _getDirections(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        LatLng(lat, lng),
+      );
+      _checkDanger(alertId);
+      _checkArrival(_currentPosition!, LatLng(lat, lng));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Current location not available')),
+      );
+    }
+  }
+
   void _checkArrival(Position current, LatLng destination) async {
     final distance = Geolocator.distanceBetween(
       current.latitude,
@@ -353,29 +374,40 @@ class _MyHomePageState extends State<MyHomePage> {
         .collection('Alerts')
         .doc(alertId)
         .snapshots()
-        .listen((doc) {
-      if (!doc.exists || !mounted) return;
+        .listen(
+          (doc) {
+        if (!doc.exists || !mounted) return;
 
-      final data = doc.data() as Map<String, dynamic>;
-      final status = data['status'];
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          final status = data['status'] as String?; // Explicit type
 
-      if (status == 'safe') {
-        print('Alert marked as safe. Stopping navigation.');
-        setState(() {
-          _navigationDestination = null;
-          _polylines.clear();
-        });
-
-        // Optionally show feedback
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Alert is marked safe. Navigation stopped.')),
-          );
+          if (status == 'safe') {
+            _handleSafeAlert();
+          }
+        } catch (e) {
+          debugPrint('Error processing alert update: $e');
         }
-        _alertListener?.cancel(); // Stop listening
-      }
+      },
+      onError: (e) => debugPrint('Alert listener error: $e'),
+    );
+  }
+
+  void _handleSafeAlert() {
+    print('Alert marked as safe. Stopping navigation.');
+    if (!mounted) return;
+
+    setState(() {
+      _navigationDestination = null;
+      _polylines.clear();
     });
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Alert is marked safe. Navigation stopped.')),
+      );
+    }
+    _alertListener?.cancel();
   }
 
   // Get current location and add its marker
@@ -549,8 +581,6 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
   }
-
-
 
 
 //need upgrade
@@ -1219,13 +1249,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   int _currentIndex = 3;
-  final List<Widget> _pages = [
-    ViewActiveAlertsScreen(),
-    SafetyMap(),
-  ];
+
 
   @override
   Widget build(BuildContext context) {
+
+    final List<Widget>  _pages = [
+      ViewActiveAlertsScreen(
+        currentPosition: _currentPosition,
+        onNavigate: (lat, lng, alertId) {
+          handleNavigationRequest(lat, lng, alertId);
+          setState(() => _currentIndex = 3);
+        },
+      ),
+      AlertHistoryScreen(),
+      // ... other pages
+    ];
     return Scaffold(
       backgroundColor: isDanger? Color(0xFFFFC5C5): Colors.white,
       drawer: AppDrawer(
@@ -1496,7 +1535,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   mini: true,
                   backgroundColor: Colors.white,
                   onPressed: _getCurrentLocation,
-                  heroTag: "location",
+                  heroTag: "location_1",
                   child: Icon(Icons.my_location, color: Colors.blue.shade700),
                 ),
                 const SizedBox(height: 8),
@@ -1507,12 +1546,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     _mapController?.animateCamera(
                       CameraUpdate.newCameraPosition(_initialPosition),
                     );},
-                  heroTag: "location",
+                  heroTag: "location_2",
                   child: Icon(Icons.home, color: Colors.blue.shade700),
                 ),
               ],
             ),
           ),
+          if (isDanger)
           Positioned(
             bottom: 35,
             right: 16,
@@ -1613,7 +1653,7 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         child: Icon(
           Icons.health_and_safety,
-          size: 35,
+          size: 55,
           color: Colors.white,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
@@ -1635,8 +1675,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        height: 70,
-        color: Colors.blue,
+        height: 60,
+        color: Color(0xFF3B82F6).withOpacity(0.6),
         notchMargin: 8,
         shape: CircularNotchedRectangle(),
         child: Row(
@@ -1650,7 +1690,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _currentIndex = 0;
                   });
                 },
-                icon: Icon(Icons.home, size: 35),
+                icon: Icon(Icons.crisis_alert_outlined, size: 28,color: Colors.white,),
               ),
             ),
             Expanded(
@@ -1666,7 +1706,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _currentIndex = 1;
                   });
                 },
-                icon: Icon(Icons.abc, size: 35),
+                icon: Icon(Icons.safety_check_rounded, size: 28,color: Colors.white,),
               ),
             ),
           ],
@@ -1675,34 +1715,43 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // Push notification handler
+  //Push notification handler
+
   void _checkInitialMessage() async {
-    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    RemoteMessage? initialMessage =
+    await FirebaseMessaging.instance.getInitialMessage();
+
     if (initialMessage != null) {
-      print("📥 App opened from terminated state via notification");
+      print(" App opened from terminated state via notification");
       _handleMessage(initialMessage);
     }
   }
 
   void _handleMessage(RemoteMessage message) {
     final data = message.data;
+
     final title = message.notification?.title ?? 'Notification';
     final body = message.notification?.body ?? '';
+
     if (context.mounted) {
       _showNotificationDialog(title, body, data);
     }
   }
 
+
   void _showNotificationDialog(String title, String body, Map<String, dynamic> data) async {
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-
     print(data.toString());
     try {
-      final alertSnapshot = await FirebaseFirestore.instance.collection('Alerts').doc(data['alertId']).get();
+      final alertSnapshot = await FirebaseFirestore.instance
+          .collection('Alerts')
+          .doc(data['alertId'])
+          .get();
 
       if (!alertSnapshot.exists || alertSnapshot.data() == null) {
         Navigator.of(context).pop();
@@ -1742,26 +1791,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   const SizedBox(height: 16),
                   Row(children: [
-                    const Text("Name: ",
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
-                    Expanded(
-                        child: Text(alert.userName ?? 'N/A',
-                            style: const TextStyle(color: Color(0xFF374151)))),
+                    const Text("Name: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.userName ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
                   ]),
                   Row(children: [
-                    const Text("Location: ",
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
-                    Expanded(
-                        child: Text(alert.address ?? 'N/A',
-                            style: const TextStyle(color: Color(0xFF374151)))),
+                    const Text("Location: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.address ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
                   ]),
+
                   Row(children: [
-                    const Text("Message: ",
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
-                    Expanded(
-                        child: Text(alert.message ?? 'N/A',
-                            style: const TextStyle(color: Color(0xFF374151)))),
+                    const Text("Message: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.message ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
                   ]),
+
                 ],
               ),
             ),
@@ -1776,6 +1818,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
+
                   final userId = FirebaseAuth.instance.currentUser?.uid;
                   final double? lat = double.tryParse(
                     data['latitude']?.toString() ?? alert.location?['latitude']?.toString() ?? '',
@@ -1825,6 +1868,8 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
   }
+
+
 }
 
 
