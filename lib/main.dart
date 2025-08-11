@@ -63,8 +63,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'ResQ Maps',
+      title: 'ResQmob',
       theme: ThemeData(
+        fontFamily: 'Verdana',
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),

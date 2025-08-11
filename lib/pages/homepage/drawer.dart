@@ -12,195 +12,205 @@ import '../community/community.dart';
 import 'homepage.dart';
 
 class AppDrawer extends StatelessWidget {
-  final UserModel? currentUser; // Assuming you have a UserModel class
+  final UserModel? currentUser;
 
-  const AppDrawer({Key? key,required this.currentUser}) : super(key: key);
+  const AppDrawer({Key? key, required this.currentUser}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      shape: BeveledRectangleBorder(),
-      width: MediaQuery.of(context).size.width * 0.8,
-      child: Column(
+      shape: const LinearBorder(),
+      width: 350,
+      backgroundColor: Colors.white,
+      child: ListView(
         children: [
-          // Header with user info
+
+          // User Profile Header
+          const SizedBox(height: 40),
           InkWell(
-            onTap: (){
+            onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => profile(uid: currentUser!.id,)),
+                MaterialPageRoute(
+                    builder: (context) => profile(uid: currentUser!.id)),
               );
             },
-            child: UserAccountsDrawerHeader(
-              accountName: Text(
-                currentUser?.name ?? 'Guest',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              accountEmail: Text(
-                currentUser?.email ?? 'No email',
-                style: const TextStyle(fontSize: 14),
-              ),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                backgroundImage: currentUser?.profileImageUrl != null
-                    ? NetworkImage(currentUser!.profileImageUrl!)
-                    : null,
-                child: currentUser?.profileImageUrl == null
-                    ? const Icon(Icons.person, size: 40, color: Colors.blue)
-                    : null,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                image: DecorationImage(
-                  image: const NetworkImage('https://imgv3.fotor.com/images/share/Free-blue-gradient-pattern-background-from-Fotor.jpg'),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Colors.blue.withOpacity(0.7),
-                    BlendMode.dstATop,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.grey[200],
+                    backgroundImage: currentUser?.profileImageUrl != null
+                        ? NetworkImage(currentUser!.profileImageUrl!)
+                        : null,
+                    child: currentUser?.profileImageUrl == null
+                        ? const Icon(Icons.person, size: 30, color: Colors.blue)
+                        : null,
                   ),
-                ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currentUser?.name ?? 'Guest',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        currentUser?.email ?? 'No email',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
+          const SizedBox(height: 40),
+          const Divider(height: 10),
+          const SizedBox(height: 5),
 
-          // Main drawer items
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildDrawerItem(
-                  icon: Icons.home,
-                  title: 'Home',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const MyHomePage()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.language,
-                  title: 'Community',
-                  onTap: () {
-                    Navigator.pop(context);
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SocialScreen(currentUser:currentUser!)),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.navigation_outlined,
-                  title: 'Navigation',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SafetyMap()),
-                    );
-
-                  },
-                ),_buildDrawerItem(
-                  icon: Icons.history,
-                  title: 'Responded',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => RespondedAlertsScreen()),
-                    );
-
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.emergency,
-                  title: 'Emergency Contacts',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to emergency contacts screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.local_police,
-                  title: 'Nearby Police Stations',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AddPoliceStations()),
-                    );
-                    // Navigate to police stations screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.local_hospital,
-                  title: 'Nearby Hospitals',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to hospitals screen
-                  },
-                ),
-                const Divider(height: 1, thickness: 1),
-                _buildDrawerItem(
-                  icon: Icons.settings,
-                  title: 'Settings',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to settings screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.help,
-                  title: 'Help & Tutorial',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to help screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.feedback,
-                  title: 'Send Feedback',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to feedback screen
-                  },
-                ),
-                const Divider(height: 1, thickness: 1),
-                _buildDrawerItem(
-                  icon: Icons.logout,
-                  title: 'Sign Out',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Authentication().signout(context);
-                  },
-                ),
-              ],
-            ),
+          // Main Drawer Items
+          _buildHighlightedItem(
+            icon: Icons.home,
+            title: 'Home',
+            isSelected: true,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MyHomePage()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.language,
+            title: 'Community',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => SocialScreen(currentUser: currentUser!)),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.navigation_outlined,
+            title: 'Navigation',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SafetyMap()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.history,
+            title: 'Responded',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => RespondedAlertsScreen()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.local_police,
+            title: 'Police Stations',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AddPoliceStations()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.local_hospital,
+            title: 'Nearby Hospitals',
+            onTap: () {
+              Navigator.pop(context);
+              // Navigate to hospitals screen
+            },
           ),
 
-          // App version and footer
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          const Divider(height: 10, indent: 60),
+          const Padding(
+            padding: EdgeInsets.only(left: 21, top: 20, bottom: 20),
+            child: Text(
+              "SETTINGS",
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          _buildDrawerItem(
+            icon: Icons.settings,
+            title: 'Settings',
+            onTap: () {
+              Navigator.pop(context);
+              // Navigate to settings screen
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.help,
+            title: 'Help & Tutorial',
+            onTap: () {
+              Navigator.pop(context);
+              // Navigate to help screen
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.feedback,
+            title: 'Send Feedback',
+            onTap: () {
+              Navigator.pop(context);
+              // Navigate to feedback screen
+            },
+          ),
+
+          const Divider(height: 10, indent: 60),
+          _buildDrawerItem(
+            icon: Icons.logout,
+            title: 'Sign Out',
+            onTap: () {
+              Navigator.pop(context);
+              Authentication().signout(context);
+            },
+          ),
+
+          // App version footer
+          const Padding(
+            padding: EdgeInsets.all(16.0),
             child: Column(
               children: [
-                const Text(
-                  'ResQ Mobile',
+                Text(
+                  'ResQmob',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: Colors.black54,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
-                  'Version 1.0.0',
+                  'Version 1.2.03',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey[600],
+                    color: Colors.black54,
                   ),
                 ),
               ],
@@ -215,14 +225,71 @@ class AppDrawer extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isSelected = false,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.blue),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 16),
+    return Container(
+      padding: const EdgeInsets.only(left: 5),
+      margin: const EdgeInsets.only(right: 15),
+      decoration: isSelected
+          ? const BoxDecoration(
+        color: Color(0XFFE8F0FE),
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      )
+          : null,
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected ? const Color(0XFF3C88EC) : Colors.black.withOpacity(0.75),
+          size: 23,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            color: isSelected ? const Color(0XFF3C88EC) : Colors.black.withOpacity(0.75),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        onTap: onTap,
       ),
-      onTap: onTap,
+    );
+  }
+
+  Widget _buildHighlightedItem({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.only(left: 5),
+      margin: const EdgeInsets.only(right: 15),
+      decoration: const BoxDecoration(
+        color: Color(0XFFE8F0FE),
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: const Color(0XFF3C88EC),
+          size: 23,
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0XFF3C88EC),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }
