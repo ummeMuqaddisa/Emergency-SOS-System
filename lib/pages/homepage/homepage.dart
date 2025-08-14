@@ -24,6 +24,7 @@ import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import 'package:resqmob/backend/api keys.dart';
 import '../../backend/firebase config/firebase message.dart';
+import '../../backend/widget_service.dart';
 import '../../modules/coordinate to location.dart';
 import '../../modules/distance.dart';
 import '../community/community.dart';
@@ -37,6 +38,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String? _widgetData;
+
   // Initial camera position
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(23.8103, 90.4125), // Dhaka coordinates
@@ -65,6 +68,13 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    //home widget init
+    WidgetService.initialize();
+    WidgetService.onDataReceived = _handleWidgetData;
+    _checkForWidgetData();
+
+
     _getCurrentLocation();
     LocationService().getInitialPosition(context);
     _checkInitialMessage();
@@ -74,8 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _handleMessage(message);
     });
 
-    _notificationSub =
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    _notificationSub = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           if (!mounted) return;
           if (message.notification != null) {
             print(
@@ -103,6 +112,9 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _currentPosition = pos;
       });
+
+
+
 
       print('1');
       print(_navigationDestination);
@@ -166,6 +178,40 @@ class _MyHomePageState extends State<MyHomePage> {
 
     super.dispose();
   }
+
+
+  //home widget init
+  void _handleWidgetData(String data) {
+    if (mounted) {
+      activeFromWidget(data);
+    }
+  }
+
+  Future<void> _checkForWidgetData() async {
+    final data = await WidgetService.getInitialData();
+    if (data != null && mounted) {
+      activeFromWidget(data);
+    }
+  }
+
+  void activeFromWidget(String message) {
+    if (!mounted) return;
+    print(message);
+    if(message=='ACTIVE'){
+      print('😀😀😀😀😀');
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        content: Text('Alert data from widget: $message'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+
+
 
 // map position initialization
   void _reinitializeMapController() {

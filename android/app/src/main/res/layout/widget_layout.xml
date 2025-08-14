@@ -1,0 +1,20 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#B71C1C"
+    android:padding="8dp">
+
+    <!-- Beautiful self-contained button design -->
+    <Button
+        android:id="@+id/widget_button"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="ResQmob"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textAllCaps="false"
+        android:background="#D32F2F"
+        android:gravity="center"
+        android:stateListAnimator="@null"/>
+
+</RelativeLayout>

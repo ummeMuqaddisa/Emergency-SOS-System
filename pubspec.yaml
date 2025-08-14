@@ -63,6 +63,7 @@ dependencies:
   latlong2: ^0.9.0
   flutter_map_cancellable_tile_provider:
   url_launcher: ^6.2.2
+  home_widget:
 
 
 dev_dependencies:
