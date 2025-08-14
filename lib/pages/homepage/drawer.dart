@@ -207,7 +207,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.03',
+                  'Version 1.2.05',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,
