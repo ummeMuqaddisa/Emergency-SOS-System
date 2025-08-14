@@ -196,18 +196,30 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void activeFromWidget(String message) {
     if (!mounted) return;
-    print(message);
-    if(message=='ACTIVE'){
-      print('😀😀😀😀😀');
-    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        content: Text('Alert data from widget: $message'),
+        content: Text('Activating Alert System...'),
         duration: const Duration(seconds: 2),
       ),
     );
+    print(message);
+    if(message=='ACTIVE'){
+      try{
+        if (!mounted) return;
+        AlertSystem(context);
+      }catch(e){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            content: Text(e.toString()),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
 
@@ -892,7 +904,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   // Main alert function
-  void AlertSystem() async {
+  void AlertSystem(BuildContext context) async {
+    if (_currentPosition == null) {
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Waiting for location...")),
+      // );
+      await _getCurrentLocation(); // Refresh location
+      if (_currentPosition == null) return;
+    }
     final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
     UserModel user = UserModel.fromJson(data.data()!);
     final length = await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length + 10);
@@ -1866,7 +1885,7 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.red,
         elevation: 0,
         onPressed: () {
-          AlertSystem(); // Call the alert system
+          AlertSystem(context);
         },
         child: Icon(
           Icons.health_and_safety,
