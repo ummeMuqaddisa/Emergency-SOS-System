@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
@@ -295,7 +296,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Future<void> _safeAnimateCamera(CameraUpdate cameraUpdate,
-      {int timeoutSeconds = 5}) async {
+      {int timeoutSeconds = 5}) async
+  {
     if (!mounted || _isControllerDisposed || !_isMapReady ||
         _mapController == null) return;
 
@@ -398,7 +400,9 @@ class _MyHomePageState extends State<MyHomePage> {
       _checkArrival(_currentPosition!, LatLng(lat, lng));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Current location not available')),
+        const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Current location not available')),
       );
     }
   }
@@ -420,6 +424,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+              behavior: SnackBarBehavior.floating,
               content: Text('You have arrived at your destination!')),
         );
       }
@@ -462,7 +467,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alert is marked safe. Navigation stopped.')),
+        const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Alert is marked safe. Navigation stopped.')),
       );
     }
     _alertListener?.cancel();
@@ -562,7 +569,9 @@ class _MyHomePageState extends State<MyHomePage> {
         debugPrint("❌ HTTP error: ${response.statusCode}");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('HTTP Error: ${response.statusCode}')),
+            SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Text('HTTP Error: ${response.statusCode}')),
           );
         }
         return;
@@ -573,7 +582,9 @@ class _MyHomePageState extends State<MyHomePage> {
         debugPrint("❌ Directions API error: ${data['status']}");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Directions API Error: ${data['status']}')),
+            SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Text('Directions API Error: ${data['status']}')),
           );
         }
         return;
@@ -634,6 +645,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+              behavior: SnackBarBehavior.floating,
               content: Text('Something went wrong while fetching directions.')),
         );
       }
@@ -663,6 +675,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 //need upgrade
+
   void _showNavigationBottomSheet(LatLng destination, Map<String, dynamic> data) async {
     final userId = data['userId'];
     if (userId == null) {
@@ -907,6 +920,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void AlertSystem(BuildContext context) async {
     if (_currentPosition == null) {
       // ScaffoldMessenger.of(context).showSnackBar(
+      //behavior: SnackBarBehavior.floating,
       //   SnackBar(content: Text("Waiting for location...")),
       // );
       await _getCurrentLocation(); // Refresh location
@@ -1014,6 +1028,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            behavior: SnackBarBehavior.floating,
             content: Text(
                 "Informed to Police station: ${nearStation!.stationName}, ${min.toStringAsFixed(2)} meter away")));
       }
@@ -1205,16 +1220,16 @@ class _MyHomePageState extends State<MyHomePage> {
         print('community post updated');
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Severity increased to ${alert2.severity + 1}")));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar( behavior: SnackBarBehavior.floating,content: Text("Severity increased to ${alert2.severity + 1}")));
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Severity already at maximum")));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating,content: Text("Severity already at maximum")));
         }
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Something went wrong")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating,content: Text("Something went wrong")));
       }
     }
   }
@@ -1471,10 +1486,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-
-
-
-
   int _currentIndex = 3;
 
 
@@ -1489,8 +1500,8 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() => _currentIndex = 3);
         },
       ),
-      AlertHistoryScreen(),
-      // ... other pages
+      SafetyMap(),
+
     ];
     return Scaffold(
       backgroundColor: isDanger? Color(0xFFFFC5C5): Colors.white,
@@ -1749,7 +1760,10 @@ class _MyHomePageState extends State<MyHomePage> {
           if (isDanger) _buildAlertOverlay(),
           if (_isLoading)
             const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: Colors.black,
+                strokeWidth: 3,
+              ),
             ),
 
           // Control Buttons
@@ -1772,7 +1786,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   backgroundColor: Colors.white,
                   onPressed: _getCurrentLocation,
                   heroTag: "location_1",
-                  child: Icon(Icons.my_location, color: Colors.blue.shade700),
+                  child: FaIcon(FontAwesomeIcons.locationCrosshairs, color: Colors.black,size: 20,),
                 ),
                 const SizedBox(height: 8),
                 FloatingActionButton(
@@ -1783,7 +1797,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       CameraUpdate.newCameraPosition(_initialPosition),
                     );},
                   heroTag: "location_2",
-                  child: Icon(Icons.home, color: Colors.blue.shade700),
+                  child: FaIcon(FontAwesomeIcons.mapLocationDot, color: Colors.black,size: 19,),
                 ),
               ],
             ),
@@ -1814,7 +1828,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       print(alertSnapshot.docs.length);
                       if(alertSnapshot.docs.length==0) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("No Alert found from you."))
+                            SnackBar(behavior: SnackBarBehavior.floating,content: Text("No Alert found from you."))
                         );
                         return;
                       }
@@ -1859,7 +1873,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       // Optional: Show a snackbar confirmation
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Status updated to safe.")),
+                          SnackBar(behavior: SnackBarBehavior.floating,content: Text("Status updated to safe.")),
                         );
                       }
 
@@ -1888,8 +1902,8 @@ class _MyHomePageState extends State<MyHomePage> {
           AlertSystem(context);
         },
         child: Icon(
-          Icons.health_and_safety,
-          size: 55,
+          Icons.notifications_active_sharp,
+          size: 50,
           color: Colors.white,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
@@ -1902,47 +1916,79 @@ class _MyHomePageState extends State<MyHomePage> {
             _currentIndex = 3;
           });
         },
-        child: Icon(
-          Icons.home,
-          size: 35,
+        child: FaIcon(
+          FontAwesomeIcons.home,
+          size: 26,
           color: Colors.white,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        height: 60,
-        color: Color(0xFF3B82F6).withOpacity(0.6),
+        height: 91,
+        color: Color(0xFF7892ff).withOpacity(1),
         notchMargin: 8,
         shape: CircularNotchedRectangle(),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             Expanded(
-              child: IconButton(
-                onPressed: () {
+              child: InkWell(
+                onTap: () {
                   setState(() {
                     _currentIndex = 0;
                   });
                 },
-                icon: Icon(Icons.crisis_alert_outlined, size: 28,color: Colors.white,),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 0;
+                        });
+                      },
+                      icon: Icon(Icons.crisis_alert_rounded, size: 28, color: Colors.white),
+                    ),
+                    Text('Active Alerts', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500))
+                  ],
+                ),
               ),
             ),
+
             Expanded(
-              child: TextButton(
-                onPressed: null,
-                child: Text(''),
+              child: InkWell(
+                onTap: null,
+                child: TextButton(
+                  onPressed: null,
+                  child: Text(''),
+                ),
               ),
             ),
+
             Expanded(
-              child: IconButton(
-                onPressed: () {
+              child: InkWell(
+                onTap: () {
                   setState(() {
                     _currentIndex = 1;
                   });
                 },
-                icon: Icon(Icons.safety_check_rounded, size: 28,color: Colors.white,),
+                child: Column(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _currentIndex = 1;
+                          });
+                        },
+                        icon: Icon(Icons.navigation_rounded, size: 28, color: Colors.white),
+                      ),
+                      Text('Safe Road', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500))
+                    ]
+                ),
               ),
             ),
           ],
@@ -1993,7 +2039,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (!alertSnapshot.exists || alertSnapshot.data() == null) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Alert not found')),
+          const SnackBar(behavior: SnackBarBehavior.floating,content: Text('Alert not found')),
         );
         return;
       }
@@ -2100,7 +2146,7 @@ class _MyHomePageState extends State<MyHomePage> {
       Navigator.of(context).pop(); // remove loader
       print("Error fetching alert: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load alert')),
+        const SnackBar(behavior: SnackBarBehavior.floating,content: Text('Failed to load alert')),
       );
     }
   }

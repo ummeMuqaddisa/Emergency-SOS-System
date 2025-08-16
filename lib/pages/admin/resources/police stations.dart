@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AddPoliceStations extends StatefulWidget {
   const AddPoliceStations({super.key});
@@ -18,7 +19,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final _formKey = GlobalKey<FormState>(); // Form key for validation
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -36,6 +37,146 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     super.dispose();
   }
 
+  // Phone call functionality
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          _showErrorSnackBar('Could not launch phone dialer');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Error making phone call: $e');
+      }
+    }
+  }
+
+  void _showCallConfirmationDialog(String stationName, String phoneNumber) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.phone, color: Colors.black, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Call Police Station',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Do you want to call $stationName?',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF374151),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.phone_outlined, size: 16, color: Color(0xFF6B7280)),
+                    const SizedBox(width: 8),
+                    Text(
+                      phoneNumber,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.phone, size: 18),
+              label: const Text('Call Now'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:Colors.black,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _makePhoneCall(phoneNumber);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: const Color(0xFFEF4444),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.black,
+      ),
+    );
+  }
+
   Future<void> _fetchPoliceStations() async {
     setState(() {
       _isLoading = true;
@@ -43,7 +184,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('Resources/PoliceStations/Stations')
-          .orderBy('stationName') // Order for better display
+          .orderBy('stationName')
           .get();
       setState(() {
         _allStations.clear();
@@ -53,14 +194,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading police stations: $e'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
+        _showErrorSnackBar('Error loading police stations: $e');
       }
     } finally {
       setState(() {
@@ -75,13 +209,13 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     }
 
     setState(() {
-      _isLoading = true; // Show loading while adding
+      _isLoading = true;
     });
 
     try {
       final newStationRef = FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations').doc();
       final newStationData = {
-        'stationId': newStationRef.id, // Use Firestore generated ID
+        'stationId': newStationRef.id,
         'stationName': _stationNameController.text.trim(),
         'address': _addressController.text.trim(),
         'location': {
@@ -89,33 +223,19 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
           'longitude': double.parse(_longitudeController.text.trim()),
         },
         'phone': _phoneController.text.trim(),
-        'timestamp': FieldValue.serverTimestamp(), // Add a timestamp
+        'timestamp': FieldValue.serverTimestamp(),
       };
 
       await newStationRef.set(newStationData);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Police station added successfully!'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: const Color(0xFF10B981),
-          ),
-        );
+        _showSuccessSnackBar('Police station added successfully!');
       }
-      Navigator.pop(context); // Close the modal
-      _fetchPoliceStations(); // Refresh the list
+      Navigator.pop(context);
+      _fetchPoliceStations();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding police station: $e'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
+        _showErrorSnackBar('Error adding police station: $e');
       }
     } finally {
       setState(() {
@@ -125,7 +245,6 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
   }
 
   void _showAddStationModal() {
-    // Clear controllers before showing the dialog
     _stationNameController.clear();
     _addressController.clear();
     _latitudeController.clear();
@@ -146,7 +265,6 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
           ),
           child: Column(
             children: [
-              // Handle
               Container(
                 width: 40,
                 height: 4,
@@ -156,7 +274,6 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
@@ -180,7 +297,6 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                   ],
                 ),
               ),
-              // Form Content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -352,11 +468,17 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          _buildContentSection(),
-        ],
+      body: RefreshIndicator(
+        backgroundColor: Colors.white,
+        color: Colors.black,
+        strokeWidth: 2,
+        onRefresh: _fetchPoliceStations,
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            _buildContentSection(),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddStationModal,
@@ -381,19 +503,6 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
         icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1F2937), size: 20),
         onPressed: () => Navigator.pop(context),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6B7280), size: 20),
-            onPressed: _fetchPoliceStations,
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Police Stations',
@@ -496,6 +605,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     final latitude = station['location']?['latitude'];
     final longitude = station['location']?['longitude'];
     final phone = station['phone'] as String? ?? '';
+    final stationName = station['stationName'] ?? 'Unknown Station';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -530,7 +640,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    station['stationName'] ?? 'Unknown Station',
+                    stationName,
                     style: const TextStyle(
                       color: Color(0xFF1F2937),
                       fontSize: 18,
@@ -553,8 +663,61 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
             ],
             if (phone.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _buildInfoRow(Icons.phone_outlined, phone),
+              _buildClickablePhoneRow(phone, stationName),
             ],
+            const SizedBox(height: 20),
+            // Action buttons
+            Row(
+              children: [
+                if (phone.isNotEmpty) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.phone, size: 18),
+                      label: const Text('Call'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () => _showCallConfirmationDialog(stationName, phone),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.navigation, size: 18),
+                    label: const Text('Navigate'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF3B82F6),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: const BorderSide(color: Color(0xFF3B82F6)),
+                    ),
+                    onPressed: () {
+                      if (latitude != null && longitude != null) {
+                        Navigator.pop(context, {
+                          'navigate': true,
+                          'destination': {
+                            'latitude': latitude,
+                            'longitude': longitude
+                          },
+                          'stationData': station,
+                        });
+                      } else {
+                        _showErrorSnackBar('Location data missing for this station.');
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -584,6 +747,41 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildClickablePhoneRow(String phone, String stationName) {
+    return GestureDetector(
+      onTap: () => _showCallConfirmationDialog(stationName, phone),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.phone_outlined,
+            size: 16,
+            color:Colors.black,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              phone,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Icon(
+            Icons.phone,
+            size: 14,
+            color: Colors.black,
+          ),
+        ],
+      ),
     );
   }
 }

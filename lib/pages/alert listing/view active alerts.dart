@@ -175,12 +175,19 @@ class _ViewActiveAlertsScreenState extends State<ViewActiveAlertsScreen> with Ti
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          _buildTabSection(),
-          _buildContentSection(),
-        ],
+      body: RefreshIndicator(
+        backgroundColor: Colors.white,
+        color: Colors.black,
+        strokeWidth:2,
+        onRefresh: () async => fetchActiveAlerts,
+
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            _buildTabSection(),
+            _buildContentSection(),
+          ],
+        ),
       ),
     );
   }
@@ -197,19 +204,6 @@ class _ViewActiveAlertsScreenState extends State<ViewActiveAlertsScreen> with Ti
       //   icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1F2937), size: 20),
       //   onPressed: () => Navigator.pop(context),
       // ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6B7280), size: 20),
-            onPressed: fetchActiveAlerts,
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Active Alerts',

@@ -64,6 +64,7 @@ dependencies:
   flutter_map_cancellable_tile_provider:
   url_launcher: ^6.2.2
   home_widget:
+  font_awesome_flutter: ^10.9.0
 
 
 dev_dependencies:

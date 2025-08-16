@@ -69,7 +69,8 @@ class _loginState extends State<login> {
   }
 
   Future<bool> signin(
-      {required String email, required String password,context}) async {
+      {required String email, required String password,context}) async
+  {
     try{
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       User? user = FirebaseAuth.instance.currentUser;

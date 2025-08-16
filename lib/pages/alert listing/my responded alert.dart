@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../Class Models/alert.dart';
@@ -137,7 +138,7 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
       case 1: return 'Low';
       case 2: return 'Medium';
       case 3: return 'High';
-      default: return 'Unknown';
+      default: return 'Unknown $severity';
     }
   }
 
@@ -154,13 +155,21 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          _buildStatsSection(),
-          _buildTabSection(),
-          _buildContentSection(),
-        ],
+      body: RefreshIndicator(
+
+        backgroundColor: Colors.white,
+
+        color: Colors.black,
+        strokeWidth:2,
+        onRefresh: () async => fetchRespondedAlerts,
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            _buildStatsSection(),
+            _buildTabSection(),
+            _buildContentSection(),
+          ],
+        ),
       ),
     );
   }
@@ -177,22 +186,9 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
         icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1F2937), size: 20),
         onPressed: () => Navigator.pop(context),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6B7280), size: 20),
-            onPressed: fetchRespondedAlerts,
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
-          'Responded Alerts',
+          'My Responses',
           style: TextStyle(
             color: Color(0xFF1F2937),
             fontSize: 28,
@@ -236,12 +232,18 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               children: [
-                _buildStatItem('Total Responded', '${alerts.length}', Icons.notifications_outlined, const Color(0xFF3B82F6)),
-                _buildStatDivider(),
-                _buildStatItem('Total Notified', '$totalNotified', Icons.people_outline, const Color(0xFF8B5CF6)),
+                _buildStatItem('Total Responded', '${alerts.length}', FontAwesomeIcons.solidBell, Colors.black),
+                Container(
+                  width: 1,
+                  height: 60,
+                  color: const Color(0xFFE5E7EB),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                _buildStatItem('Total Notified', '$totalNotified', FontAwesomeIcons.solidPaperPlane, Colors.black),
               ],
             ),
           ],
@@ -254,25 +256,29 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
     return Expanded(
       child: Column(
         children: [
-          Container(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Center(child: FaIcon(icon, color: color, size: 24)),
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
+            const SizedBox(width: 20),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),],
+        ),
+          const SizedBox(height: 7),
           Text(
             label,
             style: const TextStyle(
@@ -284,15 +290,6 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatDivider() {
-    return Container(
-      width: 1,
-      height: 60,
-      color: const Color(0xFFE5E7EB),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
     );
   }
 
@@ -340,7 +337,7 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
       return const SliverFillRemaining(
         child: Center(
           child: CircularProgressIndicator(
-            color: Color(0xFF3B82F6),
+            color: Colors.black,
             strokeWidth: 3,
           ),
         ),
@@ -349,55 +346,39 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
 
     if (filteredAlerts.isEmpty) {
       return SliverFillRemaining(
-        child: _buildEmptyState(),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(60),
+                ),
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  size: 60,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'No alerts',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+
+            ],
+          ),
+        ),
       );
     }
 
-    return _buildListView();
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(60),
-            ),
-            child: const Icon(
-              Icons.notifications_none_rounded,
-              size: 60,
-              color: Color(0xFF9CA3AF),
-            ),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            'No responded alerts',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Alerts you respond to will appear here',
-            style: TextStyle(
-              fontSize: 16,
-              color: Color(0xFF6B7280),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListView() {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
             (context, index) {
@@ -408,7 +389,6 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
       ),
     );
   }
-
 
 
   Widget _buildTimelineCard(AlertModel alert, int index) {
@@ -603,15 +583,6 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: getStatusColor(alert.status),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     alert.etype?.toUpperCase() ?? 'ALERT',
@@ -730,10 +701,10 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withOpacity(0.1),
+              color: Colors.black.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+            child: Icon(icon, color: Colors.black, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(

@@ -8,6 +8,7 @@ import '../../backend/firebase config/Authentication.dart';
 import '../../test.dart';
 import '../admin/resources/police stations.dart';
 import '../alert listing/my responded alert.dart';
+import '../alert listing/view my alerts.dart';
 import '../community/community.dart';
 import 'homepage.dart';
 
@@ -105,19 +106,19 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-            icon: Icons.navigation_outlined,
-            title: 'Navigation',
+            icon: Icons.history_rounded,
+            title: 'My Alers',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SafetyMap()),
+                MaterialPageRoute(builder: (context) => AlertHistoryScreen()),
               );
             },
           ),
           _buildDrawerItem(
-            icon: Icons.history,
-            title: 'Responded',
+            icon: Icons.handshake_rounded,
+            title: 'My Responses',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -207,7 +208,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.06',
+                  'Version 1.2.07',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,

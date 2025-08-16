@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../Class Models/alert.dart';
@@ -155,13 +156,21 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          _buildStatsSection(),
-          _buildTabSection(),
-          _buildContentSection(),
-        ],
+      body: RefreshIndicator(
+
+        backgroundColor: Colors.white,
+
+        color: Colors.black,
+        strokeWidth:2,
+        onRefresh: () async => fetchAlerts,
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            _buildStatsSection(),
+            _buildTabSection(),
+            _buildContentSection(),
+          ],
+        ),
       ),
     );
   }
@@ -174,19 +183,6 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
       backgroundColor: Colors.white,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6B7280), size: 20),
-            onPressed: fetchAlerts,
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Alert History',
@@ -234,17 +230,16 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
         ),
         child: Column(
           children: [
-
             Row(
               children: [
-                _buildStatItem('Total Alerts', '${alerts.length}', Icons.notifications_outlined, const Color(0xFF3B82F6)),
+                _buildStatItem('Total Responded', '${alerts.length}', FontAwesomeIcons.solidBell, Colors.black),
                 Container(
                   width: 1,
                   height: 60,
                   color: const Color(0xFFE5E7EB),
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                _buildStatItem('Total Notified', '$totalNotified', Icons.people_outline, const Color(0xFF8B5CF6)),
+                _buildStatItem('Total Notified', '$totalNotified', FontAwesomeIcons.solidPaperPlane, Colors.black),
               ],
             ),
           ],
@@ -257,25 +252,29 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
     return Expanded(
       child: Column(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(child: FaIcon(icon, color: color, size: 24)),
+              ),
+              const SizedBox(width: 20),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 7),
           Text(
             label,
             style: const TextStyle(
@@ -590,15 +589,6 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: getStatusColor(alert.status),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     alert.etype?.toUpperCase() ?? 'ALERT',
@@ -702,10 +692,10 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withOpacity(0.1),
+              color: Colors.black.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+            child: Icon(icon, color: Colors.black, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
