@@ -14,8 +14,9 @@ import 'homepage.dart';
 
 class AppDrawer extends StatelessWidget {
   final UserModel? currentUser;
+  final int activePage;
 
-  const AppDrawer({Key? key, required this.currentUser}) : super(key: key);
+  const AppDrawer({Key? key, required this.currentUser, required this.activePage}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +44,11 @@ class AppDrawer extends StatelessWidget {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: currentUser?.profileImageUrl != null
+                    backgroundImage: currentUser?.profileImageUrl != ""
                         ? NetworkImage(currentUser!.profileImageUrl!)
                         : null,
-                    child: currentUser?.profileImageUrl == null
-                        ? const Icon(Icons.person, size: 30, color: Colors.blue)
+                    child: currentUser?.profileImageUrl == ""
+                        ? const Icon(Icons.person, size: 30, color: Color(0xFF6B7280))
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -81,21 +82,23 @@ class AppDrawer extends StatelessWidget {
           const SizedBox(height: 5),
 
           // Main Drawer Items
-          _buildHighlightedItem(
+          _buildDrawerItem(
             icon: Icons.home,
             title: 'Home',
-            isSelected: true,
+            isSelected: activePage==1?true:false,
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MyHomePage()),
-              );
+              Navigator.popUntil(context, (route) => route.isFirst);
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => const MyHomePage()),
+              // );
             },
           ),
           _buildDrawerItem(
             icon: Icons.language,
             title: 'Community',
+            isSelected: activePage==2?true:false,
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -108,43 +111,68 @@ class AppDrawer extends StatelessWidget {
           _buildDrawerItem(
             icon: Icons.history_rounded,
             title: 'My Alers',
+            isSelected: activePage==3?true:false,
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AlertHistoryScreen()),
+                MaterialPageRoute(builder: (context) => AlertHistoryScreen(currentUser: currentUser!)),
               );
             },
           ),
           _buildDrawerItem(
             icon: Icons.handshake_rounded,
             title: 'My Responses',
+            isSelected: activePage==4?true:false,
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => RespondedAlertsScreen()),
+                MaterialPageRoute(builder: (context) => RespondedAlertsScreen(currentUser: currentUser!)),
               );
             },
           ),
           _buildDrawerItem(
             icon: Icons.local_police,
             title: 'Police Stations',
+            isSelected: activePage==5?true:false,
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AddPoliceStations()),
+                MaterialPageRoute(builder: (context) => AddPoliceStations(currentUser: currentUser,)),
               );
             },
           ),
-          _buildDrawerItem(
-            icon: Icons.local_hospital,
-            title: 'Nearby Hospitals',
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to hospitals screen
-            },
+          // _buildDrawerItem(
+          //   icon: Icons.local_hospital,
+          //   title: 'Nearby Hospitals',
+          //   onTap: () {
+          //     Navigator.pop(context);
+          //     // Navigate to hospitals screen
+          //   },
+          // ),
+          Container(
+            padding: const EdgeInsets.only(left: 5),
+            margin: const EdgeInsets.only(right: 15),
+            decoration:
+                 null,
+            child: ListTile(
+              leading: Icon(
+                Icons.local_hospital,
+                color: Colors.black.withOpacity(0.25),
+                size: 23,
+              ),
+              title: Text(
+                'Nearby Hospitals',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black.withOpacity(0.25),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: null,
+            ),
           ),
 
           const Divider(height: 10, indent: 60),
@@ -208,7 +236,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.07',
+                  'Version 1.2.08',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,

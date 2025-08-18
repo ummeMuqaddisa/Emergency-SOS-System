@@ -6,9 +6,12 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../Class Models/alert.dart';
+import '../../Class Models/user.dart';
+import '../homepage/drawer.dart';
 
 class AlertHistoryScreen extends StatefulWidget {
-  const AlertHistoryScreen({Key? key}) : super(key: key);
+  final UserModel currentUser;
+  const AlertHistoryScreen({Key? key,required this.currentUser}) : super(key: key);
 
   @override
   State<AlertHistoryScreen> createState() => _AlertHistoryScreenState();
@@ -155,6 +158,7 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: AppDrawer(currentUser: widget.currentUser,activePage: 3,),
       backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
 
@@ -162,7 +166,12 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
 
         color: Colors.black,
         strokeWidth:2,
-        onRefresh: () async => fetchAlerts,
+        onRefresh: () async{
+          await fetchAlerts();
+          setState(() {
+
+          });
+        },
         child: CustomScrollView(
           slivers: [
             _buildSliverAppBar(),
@@ -177,12 +186,43 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
+      collapsedHeight: 70,
       expandedHeight: 120,
       floating: false,
       pinned: true,
       backgroundColor: Colors.white,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12.0,top: 10,right: 0),
+        child: Builder(
+          builder: (context) {
+            return GestureDetector(
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.menu_rounded,
+                  color: Color(0xFF1F2937),
+                  size: 24,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Alert History',

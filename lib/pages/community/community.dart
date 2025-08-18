@@ -6,6 +6,8 @@ import '../../Class Models/user.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 
+import '../homepage/drawer.dart';
+
 enum SortBy { hot, newest, top}
 enum TimeFilter { hour, day, week, month, year, all }
 
@@ -131,6 +133,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: AppDrawer(currentUser: widget.currentUser!,activePage: 2,),
       backgroundColor: backgroundLight,
       body: RefreshIndicator(
         backgroundColor: Colors.white,
@@ -160,15 +163,42 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
+      collapsedHeight: 70,
       expandedHeight: 120,
       floating: false,
       pinned: true,
-      backgroundColor: cardBackground,
+      backgroundColor: Colors.white,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: textDark, size: 20),
-        onPressed: () => Navigator.pop(context),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12.0,top: 10,right: 0),
+        child: Builder(
+          builder: (context) {
+            return GestureDetector(
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.menu_rounded,
+                  color: Color(0xFF1F2937),
+                  size: 24,
+                ),
+              ),
+            );
+          },
+        ),
       ),
       actions: [
         Container(

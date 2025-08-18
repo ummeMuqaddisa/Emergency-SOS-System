@@ -964,9 +964,9 @@ class _BasicFlutterMapPageState extends State<BasicFlutterMapPage> {
               title: Text("Police Stations"),
               onTap: (){
 
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => AddPoliceStations()
-                ));
+                // Navigator.push(context, MaterialPageRoute(
+                //     builder: (context) => AddPoliceStations(currentUser: ,)
+                // ));
 
               },
             )

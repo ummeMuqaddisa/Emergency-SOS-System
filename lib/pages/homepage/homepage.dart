@@ -809,8 +809,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     user.isInDanger == true ? 'In Danger' : 'Safe',
                     user.isInDanger == true ? Icons.warning_outlined : Icons.check_circle_outline,
                   ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    'Severity',
+                    data['severity'] == 1 ? 'Low' : data['severity'] == 2 ? 'Medium' : 'High',
+                    Icons.warning_amber_rounded,
+                  ),
                   const SizedBox(height: 32),
-
                   // Navigation Button
                   SizedBox(
                     width: double.infinity,
@@ -1242,8 +1247,8 @@ class _MyHomePageState extends State<MyHomePage> {
       right: 0,
       child: Container(
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 16,
-          left: 20,
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 12,
           right: 20,
           bottom: 16,
         ),
@@ -1494,6 +1499,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final List<Widget>  _pages = [
       ViewActiveAlertsScreen(
+        currentUser: currentUser,
         currentPosition: _currentPosition,
         onNavigate: (lat, lng, alertId) {
           handleNavigationRequest(lat, lng, alertId);
@@ -1506,6 +1512,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       backgroundColor: isDanger? Color(0xFFFFC5C5): Colors.white,
       drawer: AppDrawer(
+        activePage: 1,
         currentUser: currentUser,
       ),
       body: (_currentIndex == 3)
@@ -1807,84 +1814,152 @@ class _MyHomePageState extends State<MyHomePage> {
             bottom: 35,
             right: 16,
             child: FloatingActionButton(
-                  backgroundColor: Colors.blue,
-                  onPressed: ()async{
+              backgroundColor: Colors.blue,
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Mark as Safe',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    content: const Text(
+                      'Are you sure you want to mark yourself as safe? This will notify your emergency contacts.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF374151),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
 
-                    try {
-                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                        child: const Text('Yes, I\'m Safe'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(true),
+                      ),
+                    ],
+                  ),
+                );
 
-                      // Update user's isInDanger flag
-                      await FirebaseFirestore.instance
-                          .collection('Users')
-                          .doc(uid)
-                          .update({
-                        "isInDanger": false,
-                      });
+                if (confirm != true) return; // user cancelled
 
-                      final alertSnapshot = await FirebaseFirestore.instance
-                          .collection('Alerts')
-                          .where('userId', isEqualTo: uid).where('status',isEqualTo: 'danger')
-                          .get();
-                      print(alertSnapshot.docs.length);
-                      if(alertSnapshot.docs.length==0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(behavior: SnackBarBehavior.floating,content: Text("No Alert found from you."))
-                        );
-                        return;
-                      }
-                      // Update each alert's status to 'safe'
-                      for (var doc in alertSnapshot.docs) {
-                        await doc.reference.update({'status': 'safe','safeTime': Timestamp.now()});
-                      }
+                try {
+                  final uid = FirebaseAuth.instance.currentUser?.uid;
 
-                      setState(() {
-                        isDanger = false;
-                      });
+                  // Update user's isInDanger flag
+                  await FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(uid)
+                      .update({
+                    "isInDanger": false,
+                  });
 
-                      //Temp community post delete
-                      String postId=alertSnapshot.docs.first.id;
-                      try {
+                  final alertSnapshot = await FirebaseFirestore.instance
+                      .collection('Alerts')
+                      .where('userId', isEqualTo: uid)
+                      .where('status', isEqualTo: 'danger')
+                      .get();
 
-                        final postRef = FirebaseFirestore.instance.collection('social').doc(postId);
-                        final commentsRef = postRef.collection('comments');
-
-                        final commentsSnapshot = await commentsRef.get();
-
-                        final batch = FirebaseFirestore.instance.batch();
-
-                        for (final doc in commentsSnapshot.docs) {
-                          batch.delete(doc.reference);
-                        }
-                        batch.delete(postRef);
-
-                        await batch.commit();
-
-                        print('Successfully deleted post $postId and all its comments');
-
-
-                      } catch (e) {
-                        print('Error deleting post and comments: $e');
-                        rethrow; // Re-throw to handle in calling code
-                      }
-
-
-
-
-                      // Optional: Show a snackbar confirmation
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(behavior: SnackBarBehavior.floating,content: Text("Status updated to safe.")),
-                        );
-                      }
-
-                    } catch (e) {
-                      debugPrint("Error updating status: $e");
+                  if (alertSnapshot.docs.isEmpty) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text("No Alert found from you."),
+                        ),
+                      );
                     }
+                    return;
+                  }
 
-                  },
-                  heroTag: "location",
-                  child: Text("Safe",style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.bold),),
+                  // Update each alert's status to 'safe'
+                  for (var doc in alertSnapshot.docs) {
+                    await doc.reference.update({
+                      'status': 'safe',
+                      'safeTime': Timestamp.now(),
+                    });
+                  }
+
+                  setState(() {
+                    isDanger = false;
+                  });
+
+                  // Temp community post delete
+                  String postId = alertSnapshot.docs.first.id;
+                  try {
+                    final postRef =
+                    FirebaseFirestore.instance.collection('social').doc(postId);
+                    final commentsRef = postRef.collection('comments');
+
+                    final commentsSnapshot = await commentsRef.get();
+
+                    final batch = FirebaseFirestore.instance.batch();
+
+                    for (final doc in commentsSnapshot.docs) {
+                      batch.delete(doc.reference);
+                    }
+                    batch.delete(postRef);
+
+                    await batch.commit();
+
+                    print('Successfully deleted post $postId and all its comments');
+                  } catch (e) {
+                    print('Error deleting post and comments: $e');
+                    rethrow;
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        content: Text("Status updated to safe."),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint("Error updating status: $e");
+                }
+              },
+              heroTag: "location",
+              child: Text(
+                "Safe",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+            ),
 
           ),
 

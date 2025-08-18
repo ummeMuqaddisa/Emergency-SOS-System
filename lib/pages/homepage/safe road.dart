@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -2860,6 +2861,7 @@ class _SafetyMapState extends State<SafetyMap> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Maps'),
         backgroundColor: Colors.blue.shade700,
@@ -3313,7 +3315,7 @@ class _SafetyMapState extends State<SafetyMap> {
                   backgroundColor: Colors.white,
                   onPressed: _getCurrentLocation,
                   heroTag: "location",
-                  child: Icon(Icons.my_location, color: Colors.blue.shade700),
+                  child: FaIcon(FontAwesomeIcons.locationCrosshairs, color: Colors.black,size: 20,),
                 ),
                 const SizedBox(height: 8),
                 FloatingActionButton(
@@ -3326,7 +3328,7 @@ class _SafetyMapState extends State<SafetyMap> {
                     );
                   },
                   heroTag: "dhaka",
-                  child: Icon(Icons.home, color: Colors.blue.shade700),
+                  child: FaIcon(FontAwesomeIcons.mapLocationDot, color: Colors.black,size: 19,),
                 ),
               ],
             ),
