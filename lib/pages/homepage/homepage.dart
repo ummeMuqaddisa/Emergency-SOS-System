@@ -355,7 +355,6 @@ class _MyHomePageState extends State<MyHomePage> {
           continue;
         }
 
-        print(data.toString());
         final location = data['location'];
         final latitude = location['latitude'];
         final longitude = location['longitude'];
@@ -364,8 +363,9 @@ class _MyHomePageState extends State<MyHomePage> {
           final marker = Marker(
             markerId: MarkerId(docId),
             position: LatLng(latitude, longitude),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRose),
+            icon:data['severity']==1? BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueYellow): BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueRose,),
             onTap: () {
               _showNavigationBottomSheet(LatLng(latitude, longitude), data);
             },

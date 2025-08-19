@@ -47,7 +47,7 @@ class _WrapperState extends State<Wrapper> {
               final isAdmin = data['admin'] ?? false;
 
               if (isAdmin) {
-                return const BasicFlutterMapPage();
+                return const AdminDashboard();
               }
 
               // Check for Windows-only block

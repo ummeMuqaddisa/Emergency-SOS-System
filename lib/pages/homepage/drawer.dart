@@ -6,7 +6,7 @@ import 'package:resqmob/pages/profile/profile.dart';
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import '../../test.dart';
-import '../admin/resources/police stations.dart';
+import 'police stations.dart';
 import '../alert listing/my responded alert.dart';
 import '../alert listing/view my alerts.dart';
 import '../community/community.dart';
@@ -236,7 +236,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.08',
+                  'Version 1.2.09',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,

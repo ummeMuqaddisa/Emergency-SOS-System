@@ -137,7 +137,7 @@ class _loginState extends State<login> {
       final isadmin=await cuser.admin;
       print(cuser.admin);
       if(isadmin)
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>BasicFlutterMapPage(),));
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>AdminDashboard(),));
        else
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context)=>MyHomePage(),));
 

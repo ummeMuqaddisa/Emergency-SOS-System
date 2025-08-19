@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../Class Models/user.dart';
-import '../../homepage/drawer.dart';
+import '../../Class Models/user.dart';
+import 'drawer.dart';
 
 class AddPoliceStations extends StatefulWidget {
   final UserModel? currentUser;
