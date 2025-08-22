@@ -1038,6 +1038,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
         content: _postController.text.trim(),
         createdAt: DateTime.now(),
         upvotes: [],
+        downvotes: [],
         commentCount: 0,
         temp: false,
       );
@@ -1755,6 +1756,7 @@ class _RedditStyleCommentsBottomSheetState extends State<RedditStyleCommentsBott
         content: _commentController.text.trim(),
         createdAt: DateTime.now(),
         upvotes: [],
+        downvotes: [],
         parentCommentId: _replyingToCommentId,
         replyCount: 0,
       );

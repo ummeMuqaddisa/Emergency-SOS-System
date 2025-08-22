@@ -942,6 +942,7 @@ class _MyHomePageState extends State<MyHomePage> {
         userName: user.name,
         userPhone: user.phoneNumber,
         severity: 1,
+        etype: "Unknown",
         status: 'danger',
         timestamp: Timestamp.now(),
         address: address,
@@ -1059,6 +1060,7 @@ class _MyHomePageState extends State<MyHomePage> {
           temp: true,
           createdAt: alert.timestamp.toDate(),
           upvotes: [],
+          downvotes: [],
           commentCount: 0);
       await FirebaseFirestore.instance.collection('social').doc(alert.alertId).set(post.toJson());
       print('community post created');
@@ -1220,6 +1222,7 @@ class _MyHomePageState extends State<MyHomePage> {
             temp: true,
             createdAt: alert2.timestamp.toDate(),
             upvotes: [],
+            downvotes: [],
             commentCount: 0);
         await FirebaseFirestore.instance.collection('social').doc(alert2.alertId).set(post.toJson());
         print('community post updated');

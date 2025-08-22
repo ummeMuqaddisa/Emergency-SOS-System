@@ -800,7 +800,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     return circles;
   }
 
-  // Build Users List View
+// Build Users List View
   Widget _buildUsersListView() {
     final filteredUsers = _usersList.where((user) {
       if (_searchQuery.isEmpty) return true;
@@ -814,12 +814,14 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       children: [
         _buildSearchBar('Search users...'),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+          child: filteredUsers.isEmpty
+              ? _buildEmptyState('No users found', Icons.people_outline)
+              : ListView.builder(
+            padding: const EdgeInsets.all(20),
             itemCount: filteredUsers.length,
             itemBuilder: (context, index) {
               final user = filteredUsers[index];
-              return _buildUserCard(user);
+              return _buildUserCard(user, index);
             },
           ),
         ),
@@ -827,129 +829,170 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     );
   }
 
-  Widget _buildUserCard(Map<String, dynamic> user) {
-    return Card(
-      color: Colors.white,
+  Widget _buildUserCard(Map<String, dynamic> user, int index) {
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            // Profile Image
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF4CAF50), width: 2),
-              ),
-              child: CircleAvatar(
-                radius: 28,
-                backgroundImage: (user['profileImageUrl'] != null &&
-                    user['profileImageUrl'].toString().isNotEmpty)
-                    ? NetworkImage(user['profileImageUrl'])
-                    : null,
-                backgroundColor: Colors.grey[200],
-                child: (user['profileImageUrl'] == null ||
-                    user['profileImageUrl'].toString().isEmpty)
-                    ? const Icon(Icons.person, size: 30, color: Color(0xFF4CAF50))
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 20),
-
-            // User Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user['name'] ?? 'Unknown User',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user['email'] ?? 'No email',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.phone, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        user['phoneNumber'] ?? 'No phone',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showUserInfoDialog(user),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Enhanced Profile Section
+                Stack(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.2),
+                          width: 2,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          user['address'] ?? 'No address',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
+                      child: CircleAvatar(
+                        radius: 26,
+                        backgroundImage: (user['profileImageUrl'] != null &&
+                            user['profileImageUrl'].toString().isNotEmpty)
+                            ? NetworkImage(user['profileImageUrl'])
+                            : null,
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        child: (user['profileImageUrl'] == null ||
+                            user['profileImageUrl'].toString().isEmpty)
+                            ? const Icon(
+                          Icons.person,
+                          size: 28,
+                          color: Color(0xFF6B7280),
+                        )
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+
+                // User Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              user['name'] ?? 'Unknown User',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'USR-${(index + 1).toString().padLeft(3, '0')}',
+                              style: const TextStyle(
+                                color: Color(0xFF4CAF50),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Contact Info
+                      _buildInfoRow(
+                        Icons.email_outlined,
+                        user['email'] ?? 'No email',
+                        const Color(0xFF6366F1),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildInfoRow(
+                        Icons.phone_outlined,
+                        user['phoneNumber'] ?? 'No phone',
+                        const Color(0xFF10B981),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildInfoRow(
+                        Icons.location_on_outlined,
+                        user['address'] ?? 'No address',
+                        const Color(0xFFF59E0B),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            // Action Buttons
-            Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.visibility, color: Color(0xFF2196F3)),
-                  onPressed: () => _showUserInfoDialog(user),
-                  tooltip: 'View Details',
                 ),
-                IconButton(
-                  icon: const Icon(Icons.message, color: Color(0xFF4CAF50)),
-                  onPressed: () {
-                    // Implement message functionality
-                  },
-                  tooltip: 'Send Message',
+
+                // Action Arrow
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Build Alerts List View
+// Build Alerts List View
   Widget _buildAlertsListView() {
     final filteredAlerts = _alertsList.where((alert) {
       if (_searchQuery.isEmpty) return true;
-      final message = alert['message']?.toString().toLowerCase() ?? '';
+      final alertID = alert['alertId']?.toString().toLowerCase() ?? '';
       final status = alert['status']?.toString().toLowerCase() ?? '';
-      return message.contains(_searchQuery.toLowerCase()) ||
-          status.contains(_searchQuery.toLowerCase());
+      final userName = alert['userName']?.toString().toLowerCase() ?? '';
+      return alertID.contains(_searchQuery.toLowerCase()) ||
+          status.contains(_searchQuery.toLowerCase()) ||
+          userName.contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Column(
       children: [
         _buildSearchBar('Search alerts...'),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+          child: filteredAlerts.isEmpty
+              ? _buildEmptyState('No alerts found', Icons.warning_outlined)
+              : ListView.builder(
+            padding: const EdgeInsets.all(20),
             itemCount: filteredAlerts.length,
             itemBuilder: (context, index) {
               final alert = filteredAlerts[index];
@@ -969,105 +1012,477 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
 
     Color statusColor;
     IconData statusIcon;
+    String statusText;
 
     if (isDanger) {
-      statusColor = const Color(0xFFE53E3E);
-      statusIcon = Icons.dangerous;
+      statusColor = const Color(0xFFEF4444);
+      statusIcon = Icons.dangerous_outlined;
+      statusText = 'DANGER';
     } else if (isActive) {
-      statusColor = const Color(0xFFFF9800);
-      statusIcon = Icons.warning;
+      statusColor = const Color(0xFFF59E0B);
+      statusIcon = Icons.warning_outlined;
+      statusText = 'ACTIVE';
     } else if (isSafe) {
-      statusColor = const Color(0xFF4CAF50);
-      statusIcon = Icons.check_circle;
+      statusColor = const Color(0xFF10B981);
+      statusIcon = Icons.check_circle_outlined;
+      statusText = 'RESOLVED';
     } else {
-      statusColor = const Color(0xFF9E9E9E);
+      statusColor = const Color(0xFF6B7280);
       statusIcon = Icons.help_outline;
+      statusText = 'UNKNOWN';
     }
-    print(alert.toString());
-    return InkWell(
-      onTap: (){_showAlertInfoDialog(context, alert);},
-      child: Card(
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
         color: Colors.white,
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showAlertInfoDialog(context, alert),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        statusIcon,
+                        color: statusColor,
+                        size: 20,
+                      ),
                     ),
-                    child: Icon(statusIcon, color: statusColor, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                alert['alertId'] ?? 'Unknown ID',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  statusText,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            alert['etype'] ?? 'Unknown Type',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6B7280),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (alert['timestamp'] != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _formatTimestamp(alert['timestamp'] as Timestamp),
+                          style: const TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // User and Severity Info
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoRow(
+                        Icons.person_outline,
+                        alert['userName'] ?? 'Unknown User',
+                        const Color(0xFF6366F1),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.priority_high,
+                            size: 14,
+                            color: statusColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Severity: ${alert['severity'] ?? 'N/A'}',
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Location
+                _buildInfoRow(
+                  Icons.location_on_outlined,
+                  alert['address'] ?? 'No address provided',
+                  const Color(0xFFF59E0B),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // Controllers for the add station form
+  final TextEditingController _stationNameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _latitudeController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  Future<void> _addPoliceStation() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final newStationRef = FirebaseFirestore.instance.collection('Resources/PoliceStations/Stations');
+      final newStationData = {
+        'stationId': _stationNameController.text.trim(),
+        'stationName': _stationNameController.text.trim(),
+        'address': _addressController.text.trim(),
+        'location': {
+          'latitude': double.parse(_latitudeController.text.trim()),
+          'longitude': double.parse(_longitudeController.text.trim()),
+        },
+        'phone': _phoneController.text.trim(),
+        'timestamp': FieldValue.serverTimestamp(),
+      };
+
+      await newStationRef.doc(_stationNameController.text.trim()).set(newStationData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Police station added successfully!'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.black,
+          ),
+        );
+      }
+      Navigator.pop(context);
+      _loadAllStationMarkers();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding police station: $e'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.black,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF1F2937),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+            prefixIcon: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF1F2937),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Build Police Stations List View
+  void _showAddStationModal(context) {
+    _stationNameController.clear();
+    _addressController.clear();
+    _latitudeController.clear();
+    _longitudeController.clear();
+    _phoneController.clear();
+
+    showModalBottomSheet(
+
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.65,
+          width: MediaQuery.of(context).size.width * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_police_outlined, color: Color(0xFF3B82F6), size: 28),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Add New Police Station',
+                        style: TextStyle(
+                          color: Color(0xFF1F2937),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Color(0xFF6B7280)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Form(
+                    key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "${alert['alertId']} : ${alert['etype'] ?? 'Unknown'}",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                        _buildTextField(
+                          controller: _stationNameController,
+                          label: 'Station Name',
+                          hint: 'Enter police station name',
+                          icon: Icons.local_police_outlined,
+                          validator: (value) => value!.isEmpty ? 'Station name cannot be empty' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _addressController,
+                          label: 'Address',
+                          hint: 'Enter full address',
+                          icon: Icons.location_on_outlined,
+                          validator: (value) => value!.isEmpty ? 'Address cannot be empty' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _latitudeController,
+                                label: 'Latitude',
+                                hint: 'e.g., 23.769',
+                                icon: Icons.map_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value!.isEmpty) return 'Latitude cannot be empty';
+                                  if (double.tryParse(value) == null) return 'Invalid number';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _longitudeController,
+                                label: 'Longitude',
+                                hint: 'e.g., 90.425',
+                                icon: Icons.map_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value!.isEmpty) return 'Longitude cannot be empty';
+                                  if (double.tryParse(value) == null) return 'Invalid number';
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _phoneController,
+                          label: 'Phone Number (Optional)',
+                          hint: 'Enter phone number',
+                          icon: Icons.phone_outlined,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: _isLoading
+                                ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                                : const Icon(Icons.save_outlined, size: 20),
+                            label: Text(_isLoading ? 'Saving...' : 'Save Police Station'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3B82F6),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: _isLoading ? null : _addPoliceStation,
                           ),
                         ),
-                        if (alert['timestamp'] != null)
-                          Text(
-                            _formatTimestamp(alert['timestamp'] as Timestamp),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "Severity: ${alert['severity']}",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "User Name: ${alert['userName']}",
-                style: const TextStyle(fontSize: 14, height: 1.4),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      alert['address'] ?? 'No address provided',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -1076,7 +1491,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     );
   }
 
-  // Build Police Stations List View
+
   Widget _buildStationsListView() {
     final filteredStations = _stationsList.where((station) {
       if (_searchQuery.isEmpty) return true;
@@ -1090,12 +1505,14 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       children: [
         _buildSearchBar('Search police stations...'),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+          child: filteredStations.isEmpty
+              ? _buildEmptyState('No stations found', Icons.local_police_outlined)
+              : ListView.builder(
+            padding: const EdgeInsets.all(20),
             itemCount: filteredStations.length,
             itemBuilder: (context, index) {
               final station = filteredStations[index];
-              return _buildStationCard(station);
+              return _buildStationCard(station, index);
             },
           ),
         ),
@@ -1103,131 +1520,185 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     );
   }
 
-  Widget _buildStationCard(Map<String, dynamic> station) {
-    return Card(
-      color: Colors.white,
+  Widget _buildStationCard(Map<String, dynamic> station, int index) {
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.local_police,
-                color: Color(0xFF2196F3),
-                size: 30,
-              ),
-            ),
-            const SizedBox(width: 20),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    station['stationName'] ?? 'Unknown Station',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showStationInfoDialog(station),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Station Icon
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF3B82F6).withOpacity(0.2),
+                      width: 1,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          station['address'] ?? 'No address',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  child: const Icon(
+                    Icons.local_police_outlined,
+                    color: Color(0xFF3B82F6),
+                    size: 28,
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                const SizedBox(width: 16),
+
+                // Station Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.phone, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        station['phone']?.toString() ?? 'No phone',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              station['stationName'] ?? 'Unknown Station',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'ACTIVE',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(height: 8),
+
+                      // Contact Info
+                      _buildInfoRow(
+                        Icons.location_on_outlined,
+                        station['address'] ?? 'No address',
+                        const Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildInfoRow(
+                        Icons.phone_outlined,
+                        station['phone']?.toString() ?? 'No phone',
+                        const Color(0xFF10B981),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Service Badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF3B82F6).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
-                          'ACTIVE',
+                          '24/7 Service Available',
                           style: TextStyle(
-                            color: Color(0xFF4CAF50),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF3B82F6),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.visibility, color: Color(0xFF2196F3)),
-                  onPressed: () => _showStationInfoDialog(station),
-                  tooltip: 'View Details',
                 ),
-                IconButton(
-                  icon: const Icon(Icons.call, color: Color(0xFF4CAF50)),
-                  onPressed: () {
-                    // Implement call functionality
-                  },
-                  tooltip: 'Call Station',
+
+                // Action Arrow
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Build Feedback List View
+// Build Feedback List View
   Widget _buildFeedbackListView() {
     final filteredFeedback = _feedbackList.where((feedback) {
       if (_searchQuery.isEmpty) return true;
       final message = feedback['message']?.toString().toLowerCase() ?? '';
       final type = feedback['type']?.toString().toLowerCase() ?? '';
+      final userName = feedback['userName']?.toString().toLowerCase() ?? '';
       return message.contains(_searchQuery.toLowerCase()) ||
-          type.contains(_searchQuery.toLowerCase());
+          type.contains(_searchQuery.toLowerCase()) ||
+          userName.contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Column(
       children: [
         _buildSearchBar('Search feedback...'),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+          child: filteredFeedback.isEmpty
+              ? _buildEmptyState('No feedback found', Icons.feedback_outlined)
+              : ListView.builder(
+            padding: const EdgeInsets.all(20),
             itemCount: filteredFeedback.length,
             itemBuilder: (context, index) {
               final feedback = filteredFeedback[index];
@@ -1245,109 +1716,280 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
 
     Color typeColor;
     IconData typeIcon;
+    String typeText;
 
     switch (type) {
       case 'bug':
-        typeColor = const Color(0xFFE53E3E);
-        typeIcon = Icons.bug_report;
+        typeColor = const Color(0xFFEF4444);
+        typeIcon = Icons.bug_report_outlined;
+        typeText = 'BUG REPORT';
         break;
       case 'feature':
-        typeColor = const Color(0xFF2196F3);
-        typeIcon = Icons.lightbulb;
+        typeColor = const Color(0xFF3B82F6);
+        typeIcon = Icons.lightbulb_outlined;
+        typeText = 'FEATURE REQUEST';
         break;
       case 'complaint':
-        typeColor = const Color(0xFFFF9800);
-        typeIcon = Icons.report_problem;
+        typeColor = const Color(0xFFF59E0B);
+        typeIcon = Icons.report_problem_outlined;
+        typeText = 'COMPLAINT';
         break;
       default:
-        typeColor = const Color(0xFF4CAF50);
-        typeIcon = Icons.feedback;
+        typeColor = const Color(0xFF10B981);
+        typeIcon = Icons.feedback_outlined;
+        typeText = 'GENERAL FEEDBACK';
     }
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: typeColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Row
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: typeColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(typeIcon, color: typeColor, size: 24),
+                  child: Icon(
+                    typeIcon,
+                    color: typeColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        type.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
                           color: typeColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          typeText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
+                      const SizedBox(height: 4),
                       if (feedback['timestamp'] != null)
                         Text(
                           _formatTimestamp(feedback['timestamp'] as Timestamp),
-                          style: TextStyle(
-                            color: Colors.grey[600],
+                          style: const TextStyle(
+                            color: Color(0xFF6B7280),
                             fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                     ],
                   ),
                 ),
                 if (rating > 0)
-                  Row(
-                    children: List.generate(5, (index) {
-                      return Icon(
-                        index < rating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 16,
-                      );
-                    }),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          rating.toString(),
+                          style: const TextStyle(
+                            color: Colors.amber,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
+
             const SizedBox(height: 16),
-            Text(
-              feedback['message'] ?? 'No message provided',
-              style: const TextStyle(fontSize: 14, height: 1.4),
+
+            // Message
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFE5E7EB),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                feedback['message'] ?? 'No message provided',
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Color(0xFF374151),
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 16),
+
+            // Footer Row
             Row(
               children: [
-                Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
+                _buildInfoRow(
+                  Icons.person_outline,
                   feedback['userName'] ?? 'Anonymous',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  const Color(0xFF6366F1),
                 ),
                 const Spacer(),
-                TextButton.icon(
-                  icon: const Icon(Icons.reply, size: 16),
-                  label: const Text('Reply'),
-                  onPressed: () {
-                    // Implement reply functionality
-                  },
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: const Color(0xFF3B82F6).withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.reply_outlined,
+                        size: 14,
+                        color: Color(0xFF3B82F6),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Reply',
+                        style: TextStyle(
+                          color: Color(0xFF3B82F6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+// Helper Widget for Info Rows
+  Widget _buildInfoRow(IconData icon, String text, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            icon,
+            size: 12,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+// Helper Widget for Empty States
+  Widget _buildEmptyState(String message, IconData icon) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 48,
+              color: const Color(0xFF9CA3AF),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Try adjusting your search criteria',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF9CA3AF),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1392,182 +2034,244 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   //dialog box for details
 
   void _showUserInfoDialog(Map<String, dynamic> userData) {
+    bool isNormal = userData['token'] != 'normal';
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: 900,
-          constraints: const BoxConstraints(maxHeight: 700),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header Section
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: 900,
+                constraints: const BoxConstraints(maxHeight: 700),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Header Section
                     Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                      padding: const EdgeInsets.all(32),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundImage: (userData['profileImageUrl'] != null &&
+                                userData['profileImageUrl'].toString().isNotEmpty)
+                                ? NetworkImage(userData['profileImageUrl'])
+                                : null,
+                            backgroundColor: Colors.white,
+                            child: (userData['profileImageUrl'] == null ||
+                                userData['profileImageUrl'].toString().isEmpty)
+                                ? const Icon(Icons.person, size: 40, color: Color(0xFF4CAF50))
+                                : null,
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userData['name'] ?? 'Unknown User',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text(
+                                    'Registered User',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close, color: Colors.white, size: 28),
                           ),
                         ],
                       ),
-                      child: CircleAvatar(
-                        radius: 37,
-                        backgroundImage: (userData['profileImageUrl'] != null &&
-                            userData['profileImageUrl'].toString().isNotEmpty)
-                            ? NetworkImage(userData['profileImageUrl'])
-                            : null,
-                        backgroundColor: Colors.white,
-                        child: (userData['profileImageUrl'] == null ||
-                            userData['profileImageUrl'].toString().isEmpty)
-                            ? const Icon(Icons.person, size: 40, color: Color(0xFF4CAF50))
-                            : null,
-                      ),
                     ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userData['name'] ?? 'Unknown User',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'Registered User',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+
+                    // Content Section
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(32),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Left Column - Personal & Location Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionHeader('Personal Information', Icons.person_outline),
+                                  const SizedBox(height: 20),
+                                  _buildInfoCard([
+                                    _buildEnhancedInfoRow('Full Name', userData['name'] ?? 'Not provided', Icons.badge),
+                                    _buildEnhancedInfoRow('Email Address', userData['email'] ?? 'Not provided', Icons.email_outlined),
+                                    _buildEnhancedInfoRow('Phone Number', userData['phoneNumber'] ?? 'Not provided', Icons.phone_outlined),
+                                    _buildEnhancedInfoRow('Address', userData['address'] ?? 'Not provided', Icons.location_on_outlined),
+                                  ]),
+
+                                  const SizedBox(height: 24),
+
+                                  _buildSectionHeader('Location Information', Icons.map_outlined),
+                                  const SizedBox(height: 20),
+                                  _buildInfoCard([
+                                    if (userData['location'] != null) ...[
+                                      _buildEnhancedInfoRow(
+                                        'Latitude',
+                                        userData['location']['latitude']?.toString() ?? 'Not available',
+                                        Icons.my_location,
+                                      ),
+                                      _buildEnhancedInfoRow(
+                                        'Longitude',
+                                        userData['location']['longitude']?.toString() ?? 'Not available',
+                                        Icons.place,
+                                      ),
+                                    ] else
+                                      _buildEnhancedInfoRow('Location', 'Location not available', Icons.location_off),
+                                  ]),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+
+                            const SizedBox(width: 32),
+
+                            // Right Column - Emergency Contacts & Account Status
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionHeader('Emergency Contacts', Icons.emergency),
+                                  const SizedBox(height: 20),
+                                  _buildEmergencyContactsSection(userData['emergencyContacts']),
+
+                                  const SizedBox(height: 24),
+
+                                  _buildSectionHeader('Account Status', Icons.verified_user),
+                                  const SizedBox(height: 20),
+                                  _buildInfoCard([
+                                    _buildEnhancedInfoRow(
+                                      'Safety Status',
+                                      userData['isInDanger'] ? 'Danger' : 'Safe',
+                                      Icons.check_circle,
+                                      valueColor: userData['isInDanger'] ? Colors.red : Colors.green,
+                                    ),
+                                    _buildEnhancedInfoRow(
+                                      'Last Updated',
+                                      '${_formatTimestamp(Timestamp.fromDate(DateTime.parse(userData['createdAt'])))}',
+                                      Icons.access_time,
+                                    ),
+                                    _buildEnhancedInfoRow(
+                                      'Member Since',
+                                      '${userData['createdAt']}',
+                                      Icons.calendar_today,
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF8F9FA),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(Icons.block, size: 16, color: Color(0xFF6B7280)),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  'Block Status',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xFF6B7280),
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Switch(
+                                                  value: isNormal,
+                                                  onChanged: (newValue) {
+                                                    _updateAccountStatus(userData['id'], newValue);
+                                                    setStateDialog(() {
+                                                      isNormal = newValue;
+                                                    });
+                                                  },
+                                                  activeColor: Colors.red,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ]),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
                     ),
                   ],
                 ),
               ),
-
-              // Content Section
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left Column - Personal Information
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionHeader('Personal Information', Icons.person_outline),
-                            const SizedBox(height: 20),
-                            _buildInfoCard([
-                              _buildEnhancedInfoRow('Full Name', userData['name'] ?? 'Not provided', Icons.badge),
-                              _buildEnhancedInfoRow('Email Address', userData['email'] ?? 'Not provided', Icons.email_outlined),
-                              _buildEnhancedInfoRow('Phone Number', userData['phoneNumber'] ?? 'Not provided', Icons.phone_outlined),
-                              _buildEnhancedInfoRow('Address', userData['address'] ?? 'Not provided', Icons.location_on_outlined),
-                            ]),
-
-                            const SizedBox(height: 24),
-
-                            // Location Information
-                            _buildSectionHeader('Location Information', Icons.map_outlined),
-                            const SizedBox(height: 20),
-                            _buildInfoCard([
-                              if (userData['location'] != null) ...[
-                                _buildEnhancedInfoRow('Latitude', userData['location']['latitude']?.toString() ?? 'Not available', Icons.my_location),
-                                _buildEnhancedInfoRow('Longitude', userData['location']['longitude']?.toString() ?? 'Not available', Icons.place),
-                              ] else
-                                _buildEnhancedInfoRow('Location', 'Location not available', Icons.location_off),
-                            ]),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 32),
-
-                      // Right Column - Emergency Contacts
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSectionHeader('Emergency Contacts', Icons.emergency),
-                            const SizedBox(height: 20),
-                            _buildEmergencyContactsSection(userData['emergencyContacts']),
-
-                            const SizedBox(height: 24),
-
-                            // Account Status
-                            _buildSectionHeader('Account Status', Icons.verified_user),
-                            const SizedBox(height: 20),
-                            _buildInfoCard([
-                              _buildEnhancedInfoRow('Account Status', 'Active', Icons.check_circle, valueColor: const Color(0xFF4CAF50)),
-                              _buildEnhancedInfoRow('Last Active', 'Recently', Icons.access_time),
-                              _buildEnhancedInfoRow('Member Since', 'User registration date', Icons.calendar_today),
-                            ]),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
+
+  void _updateAccountStatus(String uid, bool value) {
+    FirebaseFirestore.instance.collection('Users').doc(uid).update({
+      'token': value ? 'blocked' : 'normal',
+    }).catchError((e) => print(e.toString()));
+  }
+
 
   void _showStationInfoDialog(Map<String, dynamic> stationData) {
     showDialog(
@@ -2649,6 +3353,12 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           });
                         },
                       ):Container(),
+                      _selectedNavIndex == 4 ? IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: () {
+                          _showAddStationModal(context);
+                        },
+                      ):Container(),
                     ],
                   ),
                 ),
@@ -2664,6 +3374,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       ),
     );
   }
+
 
   Widget _buildMainContent() {
     switch (_selectedNavIndex) {
