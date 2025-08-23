@@ -32,7 +32,9 @@ import '../community/community.dart';
 import 'drawer.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  final navlat;
+  final navlng;
+  MyHomePage({super.key,this.navlat,this.navlng});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -68,6 +70,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+    print(widget.navlng);
+    print(widget.navlat);
     super.initState();
 
     //home widget init
@@ -98,6 +102,11 @@ class _MyHomePageState extends State<MyHomePage> {
             _showNotificationDialog(title, body, data);
           }
         });
+
+    if(widget.navlat!=null && widget.navlng!=null){
+      getnavpoly();
+         }
+
 
     _positionStream = Geolocator.getPositionStream(
       locationSettings: LocationSettings(
@@ -180,7 +189,17 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+getnavpoly()async{
+    await _getCurrentLocation();
+    if (_currentPosition != null) {
 
+      _navigationDestination = LatLng(widget.navlat, widget.navlng);
+      await _getDirections(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        _navigationDestination!,
+      );
+    }
+}
   //home widget init
   void _handleWidgetData(String data) {
     if (mounted) {
@@ -946,7 +965,7 @@ class _MyHomePageState extends State<MyHomePage> {
         status: 'danger',
         timestamp: Timestamp.now(),
         address: address,
-        message: 'help',
+        message: user.msg != "" ? user.msg : "initial help message",
         location: {
           'latitude': _currentPosition!.latitude,
           'longitude': _currentPosition!.longitude,

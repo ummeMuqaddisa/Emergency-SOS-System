@@ -82,6 +82,7 @@ class _signupState extends State<signup> {
         admin: false,
         email: email.text,
         profileImageUrl: url,
+        msg : "initial help message",
         location: {
           'latitude': position.latitude,
           'longitude': position.longitude,
@@ -131,6 +132,7 @@ class _signupState extends State<signup> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
+        backgroundColor: Colors.white,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

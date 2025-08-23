@@ -12,6 +12,8 @@ import 'dart:async';
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../Class Models/user.dart';
+
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -1214,6 +1216,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  Map<String, Map<String, dynamic>> _userCache = {};
   final _formKey = GlobalKey<FormState>();
   Future<void> _addPoliceStation() async {
     if (!_formKey.currentState!.validate()) {
@@ -1715,15 +1718,26 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       ],
     );
   }
-  Map<String, Map<String, dynamic>> _userCache = {};
+
 
   Widget _buildFeedbackCard(Map<String, dynamic> feedback) {
+
     final typeColor = Colors.black;
     final userEmail = feedback['userEmail']?.toString() ?? '';
     final userId = feedback['userId']?.toString() ?? '';
-    final userName = _userCache[userId]?['name'] ?? 'Unknown User';
-    final userPhoto = _userCache[userId]?['profileImageUrl'];
+    var userName = _userCache[userId]?['name'] ?? 'Unknown User';
+    var userPhoto = _userCache[userId]?['profileImageUrl'];
 
+    final data = FirebaseFirestore.instance.collection('Users').doc(feedback['userId']).get().then((doc) {
+      if (doc.exists) {
+        _userCache[feedback['userId']] = doc.data()!;
+        userName = doc.data()!['name'];
+        userPhoto = doc.data()!['profileImageUrl'];
+        setState(() {
+
+        });
+      }
+    });
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(

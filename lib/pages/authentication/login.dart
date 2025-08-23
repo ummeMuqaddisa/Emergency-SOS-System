@@ -206,6 +206,7 @@ class _loginState extends State<login> {
       );
     } else {
       return Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(),
         body: SafeArea(
           child: SingleChildScrollView(
