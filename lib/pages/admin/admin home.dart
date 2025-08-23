@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 
 import 'package:resqmob/pages/profile/profile.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -269,7 +270,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   void _loadFeedbackData() {
     _feedbackSubscription?.cancel();
     _feedbackSubscription = FirebaseFirestore.instance
-        .collection('Feedback')
+        .collection('/Resources/Feedbacks/feedbacks')
         .snapshots()
         .listen((QuerySnapshot querySnapshot) {
       if (!mounted) return;
@@ -1684,11 +1685,11 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     final filteredFeedback = _feedbackList.where((feedback) {
       if (_searchQuery.isEmpty) return true;
       final message = feedback['message']?.toString().toLowerCase() ?? '';
-      final type = feedback['type']?.toString().toLowerCase() ?? '';
-      final userName = feedback['userName']?.toString().toLowerCase() ?? '';
+      final userId = feedback['userId']?.toString().toLowerCase() ?? '';
+      final userEmail = feedback['userEmail']?.toString().toLowerCase() ?? '';
       return message.contains(_searchQuery.toLowerCase()) ||
-          type.contains(_searchQuery.toLowerCase()) ||
-          userName.contains(_searchQuery.toLowerCase());
+          userId.contains(_searchQuery.toLowerCase()) ||
+          userEmail.contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Column(
@@ -1697,48 +1698,31 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         Expanded(
           child: filteredFeedback.isEmpty
               ? _buildEmptyState('No feedback found', Icons.feedback_outlined)
-              : ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: filteredFeedback.length,
-            itemBuilder: (context, index) {
-              final feedback = filteredFeedback[index];
-              return _buildFeedbackCard(feedback);
+              : RefreshIndicator(
+            onRefresh: () async {
+              _loadFeedbackData();
             },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: filteredFeedback.length,
+              itemBuilder: (context, index) {
+                final feedback = filteredFeedback[index];
+                return _buildFeedbackCard(feedback);
+              },
+            ),
           ),
         ),
       ],
     );
   }
+  Map<String, Map<String, dynamic>> _userCache = {};
 
   Widget _buildFeedbackCard(Map<String, dynamic> feedback) {
-    final type = feedback['type']?.toString().toLowerCase() ?? 'general';
-    final rating = feedback['rating']?.toInt() ?? 0;
-
-    Color typeColor;
-    IconData typeIcon;
-    String typeText;
-
-    switch (type) {
-      case 'bug':
-        typeColor = const Color(0xFFEF4444);
-        typeIcon = Icons.bug_report_outlined;
-        typeText = 'BUG REPORT';
-        break;
-      case 'feature':
-        typeColor = const Color(0xFF3B82F6);
-        typeIcon = Icons.lightbulb_outlined;
-        typeText = 'FEATURE REQUEST';
-        break;
-      case 'complaint':
-        typeColor = const Color(0xFFF59E0B);
-        typeIcon = Icons.report_problem_outlined;
-        typeText = 'COMPLAINT';
-        break;
-      default:
-        typeColor = const Color(0xFF10B981);
-        typeIcon = Icons.feedback_outlined;
-        typeText = 'GENERAL FEEDBACK';
-    }
+    final typeColor = Colors.black;
+    final userEmail = feedback['userEmail']?.toString() ?? '';
+    final userId = feedback['userId']?.toString() ?? '';
+    final userName = _userCache[userId]?['name'] ?? 'Unknown User';
+    final userPhoto = _userCache[userId]?['profileImageUrl'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1762,19 +1746,33 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row
+            // Header Row with User Info
             Row(
               children: [
+                // User Profile Photo
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: typeColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50),
+                      width: 2,
+                    ),
                   ),
-                  child: Icon(
-                    typeIcon,
-                    color: typeColor,
-                    size: 20,
+                  child: CircleAvatar(
+                    radius: 23,
+                    backgroundImage: (userPhoto != null && userPhoto.isNotEmpty)
+                        ? NetworkImage(userPhoto)
+                        : null,
+                    backgroundColor: Colors.grey[200],
+                    child: (userPhoto == null || userPhoto.isEmpty)
+                        ? const Icon(
+                      Icons.person,
+                      size: 25,
+                      color: Color(0xFF4CAF50),
+                    )
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1782,74 +1780,60 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: typeColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          typeText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      if (feedback['timestamp'] != null)
+                      const SizedBox(height: 2),
+                      Text(
+                        userEmail,
+                        style: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      if (feedback['createdAt'] != null)
                         Text(
-                          _formatTimestamp(feedback['timestamp'] as Timestamp),
+                          _formatTimestamp(feedback['createdAt'] as Timestamp),
                           style: const TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                     ],
                   ),
                 ),
-                if (rating > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          rating.toString(),
-                          style: const TextStyle(
-                            color: Colors.amber,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: typeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'ID: ${feedback['id']}',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
               ],
             ),
 
             const SizedBox(height: 16),
 
-            // Message
+            // Message Container
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -1873,46 +1857,55 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
 
             const SizedBox(height: 16),
 
-            // Footer Row
+            // Action Buttons Row
             Row(
               children: [
-                _buildInfoRow(
-                  Icons.person_outline,
-                  feedback['userName'] ?? 'Anonymous',
-                  const Color(0xFF6366F1),
+               Expanded(
+                 child: Container(),
+               ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(),
                 ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: const Color(0xFF3B82F6).withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.reply_outlined,
-                        size: 14,
-                        color: Color(0xFF3B82F6),
+                const SizedBox(width: 8),
+                // Reply Button
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _replyToFeedback(feedback),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Reply',
-                        style: TextStyle(
-                          color: Color(0xFF3B82F6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: const Color(0xFF3B82F6).withOpacity(0.2),
+                          width: 1,
                         ),
                       ),
-                    ],
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.reply_outlined,
+                            size: 14,
+                            color: Color(0xFF3B82F6),
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Reply',
+                            style: TextStyle(
+                              color: Color(0xFF3B82F6),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1923,6 +1916,91 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     );
   }
 
+// Helper method to send email
+  Future<void> _sendEmailToUser(String userEmail, Map<String, dynamic> feedback) async {
+    try {
+      final subject = Uri.encodeComponent('Re: Your Feedback (ID: ${feedback['id']})');
+      final body = Uri.encodeComponent(
+          'Dear User,\n\n'
+              'Thank you for your feedback:\n'
+              '"${feedback['message']}"\n\n'
+              'We appreciate your input and will get back to you soon.\n\n'
+              'Best regards,\n'
+              'Admin Team'
+      );
+
+      final gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=$userEmail&subject=$subject&body=$body';
+
+      if (await canLaunchUrl(Uri.parse(gmailUrl))) {
+        await launchUrl(Uri.parse(gmailUrl), mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open Gmail in browser'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening Gmail: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+// Helper method to reply to feedback
+  void _replyToFeedback(Map<String, dynamic> feedback) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text('Reply to Feedback ID: ${feedback['id']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Original Message:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(feedback['message'] ?? ''),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: 'Type your reply here...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _sendEmailToUser('saifislamofficial@gmail.com', feedback);
+            },
+            child: const Text('Send Reply'),
+          ),
+        ],
+      ),
+    );
+  }
 // Helper Widget for Info Rows
   Widget _buildInfoRow(IconData icon, String text, Color color) {
     return Row(
