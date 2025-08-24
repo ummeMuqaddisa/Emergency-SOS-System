@@ -653,14 +653,14 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
           width: 20,
           height: 20,
           decoration: BoxDecoration(
-            color: primaryRed,
+            color: Colors.black.withOpacity(0.1),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Icon(Icons.language, color: Colors.white, size: 12),
+          child: const Icon(Icons.language, color: Colors.black, size: 12),
         ),
         const SizedBox(width: 8),
         const Text(
-          'r/community',
+          'r/ResQunity',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -1689,11 +1689,11 @@ class _RedditStyleCommentsBottomSheetState extends State<RedditStyleCommentsBott
                 onTap: _createComment,
                 child: Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: const BoxDecoration(
-                    color: primaryBlue,
+                  decoration:  BoxDecoration(
+                    color: Colors.black.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.send_rounded, color: cardBackground, size: 20),
+                  child: const Icon(Icons.send_rounded, color: Colors.black, size: 20),
                 ),
               ),
             ],

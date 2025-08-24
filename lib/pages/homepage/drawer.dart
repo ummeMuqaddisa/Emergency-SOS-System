@@ -7,6 +7,8 @@ import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import '../../test.dart';
 import '../admin/resources/feedback.dart';
+import 'help page.dart';
+import 'hospitals.dart';
 import 'police stations.dart';
 import '../alert listing/my responded alert.dart';
 import '../alert listing/view my alerts.dart';
@@ -145,35 +147,19 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          // _buildDrawerItem(
-          //   icon: Icons.local_hospital,
-          //   title: 'Nearby Hospitals',
-          //   onTap: () {
-          //     Navigator.pop(context);
-          //     // Navigate to hospitals screen
-          //   },
-          // ),
-          Container(
-            padding: const EdgeInsets.only(left: 5),
-            margin: const EdgeInsets.only(right: 15),
-            decoration:
-                 null,
-            child: ListTile(
-              leading: Icon(
-                Icons.local_hospital,
-                color: Colors.black.withOpacity(0.25),
-                size: 23,
-              ),
-              title: Text(
-                'Nearby Hospitals',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.black.withOpacity(0.25),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onTap: null,
-            ),
+          _buildDrawerItem(
+            icon: Icons.local_hospital,
+            title: 'Nearby Hospitals',
+            isSelected: activePage==6?true:false,
+            onTap: () {
+
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HospitalsPage(currentUser: currentUser,)),
+              );
+
+            },
           ),
 
           const Divider(height: 10, indent: 60),
@@ -199,8 +185,14 @@ class AppDrawer extends StatelessWidget {
           _buildDrawerItem(
             icon: Icons.help,
             title: 'Help & Tutorial',
+            isSelected: activePage==8?true:false,
             onTap: () {
               Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => GeminiChatPage(init_text: 'hello',isSupport: true,currentUser: currentUser!,)),
+              );
+
               // Navigate to help screen
             },
           ),
@@ -243,7 +235,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.13',
+                  'Version 1.2.16',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,

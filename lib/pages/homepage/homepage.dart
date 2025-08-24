@@ -11,7 +11,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:resqmob/Class%20Models/sms.dart';
+import 'package:resqmob/backend/sms.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/alert%20listing/view%20active%20alerts.dart';
@@ -439,7 +439,6 @@ getnavpoly()async{
         _navigationDestination = null;
         _polylines.clear();
       });
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1528,7 +1527,7 @@ getnavpoly()async{
           setState(() => _currentIndex = 3);
         },
       ),
-      SafetyMap(),
+      SafetyMap(currentUser: currentUser,),
 
     ];
     return Scaffold(
@@ -1804,7 +1803,9 @@ getnavpoly()async{
                 FloatingActionButton(
                   backgroundColor: Colors.white,
                   onPressed: (){
-                    sendSos(['01839228924'] , 'saif', 0, 0);
+                    //sendSos(['01839228924'] , 'saif', 0, 0);
+
+
                   },
                   heroTag: "location_3",
                   child: Text('Test'),
@@ -2124,7 +2125,10 @@ getnavpoly()async{
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const Center(child: CircularProgressIndicator(
+        color: Colors.black,
+        strokeWidth: 3,
+      )),
     );
     print(data.toString());
     try {

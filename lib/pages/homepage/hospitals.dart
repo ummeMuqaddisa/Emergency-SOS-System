@@ -8,22 +8,21 @@ import 'dart:math' as math;
 import '../../Class Models/user.dart';
 import 'drawer.dart';
 
-class AddPoliceStations extends StatefulWidget {
+class HospitalsPage extends StatefulWidget {
   final UserModel? currentUser;
-  const AddPoliceStations({super.key, required this.currentUser});
+  const HospitalsPage({super.key, required this.currentUser});
 
   @override
-  State<AddPoliceStations> createState() => _AddPoliceStationsState();
+  State<HospitalsPage> createState() => _HospitalsPageState();
 }
 
-class _AddPoliceStationsState extends State<AddPoliceStations> {
-  final List<Map<String, dynamic>> _allStations = [];
-  List<Map<String, dynamic>> _sortedStations = [];
+class _HospitalsPageState extends State<HospitalsPage> {
+  final List<Map<String, dynamic>> _allHospitals = [];
+  List<Map<String, dynamic>> _sortedHospitals = [];
   bool _isLoading = true;
   Position? _currentPosition;
 
-  // Controllers for the add station form
-  final TextEditingController _stationNameController = TextEditingController();
+  final TextEditingController _hospitalController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
@@ -38,7 +37,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
 
   @override
   void dispose() {
-    _stationNameController.dispose();
+    _hospitalController.dispose();
     _addressController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
@@ -48,7 +47,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
 
   Future<void> _initializeData() async {
     await _getCurrentLocation();
-    await _fetchPoliceStations();
+    await _fetchHospital();
   }
 
   // Get current location
@@ -137,7 +136,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     }
   }
 
-  void _showCallConfirmationDialog(String stationName, String phoneNumber) {
+  void _showCallConfirmationDialog(String hospitalName, String phoneNumber) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -158,7 +157,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Call Police Station',
+                  'Call Hospital',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -173,7 +172,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Do you want to call $stationName?',
+                'Do you want to call $hospitalName?',
                 style: const TextStyle(
                   fontSize: 16,
                   color: Color(0xFF374151),
@@ -248,46 +247,46 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     );
   }
 
-  Future<void> _fetchPoliceStations() async {
+  Future<void> _fetchHospital() async {
     setState(() {
       _isLoading = true;
     });
     try {
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('Resources/PoliceStations/Stations')
+          .collection('Resources/Hospitals/hospitals')
           .get();
 
       setState(() {
-        _allStations.clear();
+        _allHospitals.clear();
         for (final doc in querySnapshot.docs) {
-          Map<String, dynamic> stationData = doc.data();
+          Map<String, dynamic> hospitalData = doc.data();
 
           // Calculate distance if user location is available
           if (_currentPosition != null &&
-              stationData['location'] != null &&
-              stationData['location']['latitude'] != null &&
-              stationData['location']['longitude'] != null) {
+              hospitalData['location'] != null &&
+              hospitalData['location']['latitude'] != null &&
+              hospitalData['location']['longitude'] != null) {
 
             double distance = _calculateDistance(
               _currentPosition!.latitude,
               _currentPosition!.longitude,
-              stationData['location']['latitude'],
-              stationData['location']['longitude'],
+              hospitalData['location']['latitude'],
+              hospitalData['location']['longitude'],
             );
 
-            stationData['distance'] = distance;
-            stationData['distanceText'] = _formatDistance(distance);
+            hospitalData['distance'] = distance;
+            hospitalData['distanceText'] = _formatDistance(distance);
           } else {
-            stationData['distance'] = double.infinity;
-            stationData['distanceText'] = 'Distance unavailable';
+            hospitalData['distance'] = double.infinity;
+            hospitalData['distanceText'] = 'Distance unavailable';
           }
 
-          _allStations.add(stationData);
+          _allHospitals.add(hospitalData);
         }
 
-        // Sort stations by distance
-        _sortedStations = List.from(_allStations);
-        _sortedStations.sort((a, b) {
+        // Sort hospitals by distance
+        _sortedHospitals = List.from(_allHospitals);
+        _sortedHospitals.sort((a, b) {
           double distanceA = a['distance'] ?? double.infinity;
           double distanceB = b['distance'] ?? double.infinity;
           return distanceA.compareTo(distanceB);
@@ -295,7 +294,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
       });
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Error loading police stations: $e');
+        _showErrorSnackBar('Error loading Hospital: $e');
       }
     } finally {
       setState(() {
@@ -307,7 +306,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: AppDrawer(currentUser: widget.currentUser, activePage: 5),
+      drawer: AppDrawer(currentUser: widget.currentUser, activePage: 6),
       backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
         backgroundColor: Colors.white,
@@ -368,7 +367,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
       ),
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
-          'Nearby Stations',
+          'Nearby Hospitals',
           style: TextStyle(
             color: Color(0xFF1F2937),
             fontSize: 28,
@@ -403,7 +402,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
       );
     }
 
-    if (_sortedStations.isEmpty) {
+    if (_sortedHospitals.isEmpty) {
       return SliverFillRemaining(
         child: _buildEmptyState(),
       );
@@ -414,10 +413,10 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
               (context, index) {
-            final station = _sortedStations[index];
-            return _buildStationCard(station, index);
+            final hospital = _sortedHospitals[index];
+            return _buildHospitalCard(hospital, index);
           },
-          childCount: _sortedStations.length,
+          childCount: _sortedHospitals.length,
         ),
       ),
     );
@@ -436,14 +435,14 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
               borderRadius: BorderRadius.circular(60),
             ),
             child: const Icon(
-              Icons.local_police_outlined,
+              Icons.local_hospital_rounded,
               size: 60,
               color: Color(0xFF9CA3AF),
             ),
           ),
           const SizedBox(height: 32),
           const Text(
-            'No police stations added',
+            'No hospital added',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -452,7 +451,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Add your first police station now!',
+            'Add your first hospital now!',
             style: TextStyle(
               fontSize: 16,
               color: Color(0xFF6B7280),
@@ -464,12 +463,12 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     );
   }
 
-  Widget _buildStationCard(Map<String, dynamic> station, int index) {
-    final latitude = station['location']?['latitude'];
-    final longitude = station['location']?['longitude'];
-    final phone = station['phone'] as String? ?? '';
-    final stationName = station['stationName'] ?? 'Unknown Station';
-    final distanceText = station['distanceText'] ?? 'Distance unavailable';
+  Widget _buildHospitalCard(Map<String, dynamic> hospital, int index) {
+    final latitude = hospital['location']?['latitude'];
+    final longitude = hospital['location']?['longitude'];
+    final phone = hospital['phone'] as String? ?? '';
+    final hospitalName = hospital['hospitalName'] ?? 'Unknown Hospital';
+    final distanceText = hospital['distanceText'] ?? 'Distance unavailable';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -499,7 +498,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                     color: Colors.black.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.local_police_outlined, color: Colors.black, size: 24),
+                  child: const Icon(Icons.local_hospital_rounded, color: Colors.black, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -507,7 +506,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        stationName,
+                        hospitalName,
                         style: const TextStyle(
                           color: Color(0xFF1F2937),
                           fontSize: 18,
@@ -538,10 +537,10 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(Icons.location_on_outlined, station['address'] ?? 'Address not available'),
+            _buildInfoRow(Icons.location_on_outlined, hospital['address'] ?? 'Address not available'),
             if (phone.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _buildClickablePhoneRow(phone, stationName),
+              _buildClickablePhoneRow(phone, hospitalName),
             ],
             const SizedBox(height: 20),
             // Action buttons
@@ -561,7 +560,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: () => _showCallConfirmationDialog(stationName, phone),
+                      onPressed: () => _showCallConfirmationDialog(hospitalName, phone),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -587,7 +586,7 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
                           ),
                         );
                       } else {
-                        _showErrorSnackBar('Location data missing for this station.');
+                        _showErrorSnackBar('Location data missing for this hospital.');
                       }
                     },
                   ),
@@ -626,9 +625,9 @@ class _AddPoliceStationsState extends State<AddPoliceStations> {
     );
   }
 
-  Widget _buildClickablePhoneRow(String phone, String stationName) {
+  Widget _buildClickablePhoneRow(String phone, String hospitalName) {
     return GestureDetector(
-      onTap: () => _showCallConfirmationDialog(stationName, phone),
+      onTap: () => _showCallConfirmationDialog(hospitalName, phone),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

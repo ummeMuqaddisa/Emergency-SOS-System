@@ -177,7 +177,7 @@ class _ViewActiveAlertsScreenState extends State<ViewActiveAlertsScreen> with Ti
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        drawer: AppDrawer(currentUser: widget.currentUser,activePage: 1,),
+      //  drawer: AppDrawer(currentUser: widget.currentUser,activePage: 1,),
       backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
         backgroundColor: Colors.white,
@@ -210,36 +210,36 @@ class _ViewActiveAlertsScreenState extends State<ViewActiveAlertsScreen> with Ti
       backgroundColor: Colors.white,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 12.0,top: 10,right: 0),
-        child: Builder(
-          builder: (context) {
-            return GestureDetector(
-              onTap: () => Scaffold.of(context).openDrawer(),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.menu_rounded,
-                  color: Color(0xFF1F2937),
-                  size: 24,
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+      // leading: Padding(
+      //   padding: const EdgeInsets.only(left: 12.0,top: 10,right: 0),
+      //   child: Builder(
+      //     builder: (context) {
+      //       return GestureDetector(
+      //         onTap: () => Scaffold.of(context).openDrawer(),
+      //         child: Container(
+      //           width: 44,
+      //           height: 44,
+      //           decoration: BoxDecoration(
+      //             color: Colors.white,
+      //             borderRadius: BorderRadius.circular(12),
+      //             boxShadow: [
+      //               BoxShadow(
+      //                 color: Colors.black.withOpacity(0.1),
+      //                 blurRadius: 8,
+      //                 offset: const Offset(0, 2),
+      //               ),
+      //             ],
+      //           ),
+      //           child: const Icon(
+      //             Icons.menu_rounded,
+      //             color: Color(0xFF1F2937),
+      //             size: 24,
+      //           ),
+      //         ),
+      //       );
+      //     },
+      //   ),
+      // ),
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Active Alerts',

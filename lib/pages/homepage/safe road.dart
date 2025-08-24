@@ -9,8 +9,12 @@ import 'dart:math' as math;
 
 import 'package:resqmob/backend/api%20keys.dart';
 
+import '../../Class Models/user.dart';
+import 'drawer.dart';
+
 class SafetyMap extends StatefulWidget {
-  const SafetyMap({Key? key}) : super(key: key);
+  final UserModel? currentUser;
+  const SafetyMap({Key? key,required this.currentUser}) : super(key: key);
 
   @override
   _SafetyMapState createState() => _SafetyMapState();
@@ -21,7 +25,9 @@ class _SafetyMapState extends State<SafetyMap> {
   final Completer<GoogleMapController> _controller = Completer();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  var selectedRouteIndex=0;
   Timer? _debounceTimer;
+
 
   // Google API Key - Replace with your actual API key
    String googleApiKey = apiKey.getKey();
@@ -265,9 +271,6 @@ class _SafetyMapState extends State<SafetyMap> {
 //     Polyline(polylineId: const PolylineId('route_0'), points: [LatLng(23.73728, 90.40409), LatLng(23.73737, 90.40411), LatLng(23.73743, 90.40411), LatLng(23.73752, 90.40411), LatLng(23.73757, 90.4041), LatLng(23.73762, 90.40408), LatLng(23.73772, 90.40401), LatLng(23.73783, 90.40397), LatLng(23.73793, 90.40392), LatLng(23.73802, 90.40387), LatLng(23.73817, 90.40377), LatLng(23.73829, 90.40369), LatLng(23.73838, 90.40362), LatLng(23.73848, 90.40353), LatLng(23.73871, 90.40329), LatLng(23.73873, 90.40326), LatLng(23.73893, 90.40306), LatLng(23.73909, 90.40284), LatLng(23.73929, 90.40252), LatLng(23.73949, 90.40221), LatLng(23.73968, 90.40188), LatLng(23.73986, 90.40156), LatLng(23.74002, 90.40124), LatLng(23.74004, 90.4012), LatLng(23.7403, 90.40065), LatLng(23.74035, 90.40053), LatLng(23.74045, 90.40031), LatLng(23.74054, 90.40012), LatLng(23.74061, 90.39999), LatLng(23.74066, 90.39991), LatLng(23.74073, 90.39979), LatLng(23.74083, 90.39969), LatLng(23.74099, 90.39952), LatLng(23.74119, 90.39932), LatLng(23.74167, 90.39887), LatLng(23.7419, 90.39862)], color: Colors.red, width: 6),
 //
 //   };
-
-
-
 
   Set<Marker> markers = {};
 //   Set<Marker> markers = {
@@ -2535,9 +2538,6 @@ class _SafetyMapState extends State<SafetyMap> {
     });
   }
 
-  // Fetch place suggestions from Google Places API
-  // Replace your _fetchPlaceSuggestions method with this:
-
   Future<void> _fetchPlaceSuggestions(String query) async {
     setState(() {
       isLoading = true;
@@ -2551,7 +2551,8 @@ class _SafetyMapState extends State<SafetyMap> {
           '&key=$googleApiKey'
           '&components=country:bd'
           '&types=establishment|geocode'
-          '&fields=place_id,description,structured_formatting';
+          '&fields=place_id,description,structured_formatting'
+          '&language=en';
 
       // Add location bias if available
       if (currentPosition != null) {
@@ -2707,10 +2708,10 @@ class _SafetyMapState extends State<SafetyMap> {
       String baseUrl = 'https://maps.googleapis.com/maps/api/directions/json';
       String request = '$baseUrl?origin=${currentPosition!.latitude},${currentPosition!.longitude}'
           '&destination=${destinationLocation!.latitude},${destinationLocation!.longitude}'
-          '&alternatives=true' // Get alternative routes
-          '&avoid=tolls' // Avoid tolls (relevant for BD highways)
-          '&region=bd' // Bangladesh region
-          '&language=bn' // Bengali language
+          '&alternatives=true'
+          '&avoid=tolls'
+          '&region=bd'
+          '&language=en'
           '&key=$googleApiKey';
 
       print('Directions API Request: $request');
@@ -2852,32 +2853,129 @@ class _SafetyMapState extends State<SafetyMap> {
             patterns: i == routeIndex ? [] : [PatternItem.dash(8), PatternItem.gap(4)],
           ),
         );
-        print(polylines.last.toJson());
       }
     });
   }
 
 
+  Widget _buildCustomAppBar() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 12,
+          right: 20,
+          bottom: 16,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white.withOpacity(0.9),
+              Colors.white.withOpacity(0.7),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: Row(
+          children: [
+            // Builder(
+            //   builder: (context) {
+            //     return GestureDetector(
+            //       onTap: () => Scaffold.of(context).openDrawer(),
+            //       child: Container(
+            //         width: 44,
+            //         height: 44,
+            //         decoration: BoxDecoration(
+            //           color: Colors.white,
+            //           borderRadius: BorderRadius.circular(12),
+            //           boxShadow: [
+            //             BoxShadow(
+            //               color: Colors.black.withOpacity(0.1),
+            //               blurRadius: 8,
+            //               offset: const Offset(0, 2),
+            //             ),
+            //           ],
+            //         ),
+            //         child: const Icon(
+            //           Icons.menu_rounded,
+            //           color: Color(0xFF1F2937),
+            //           size: 24,
+            //         ),
+            //       ),
+            //     );
+            //   },
+            // ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Safety Map',
+                    style: TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'safe road navigation system',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Text('test')
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Maps'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: (){
-              setState(() {
-
-              });
-            },
-          ),
-        ],
+      drawer: AppDrawer(
+        activePage: 1,
+        currentUser: widget.currentUser,
       ),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Google Map
@@ -3094,10 +3192,10 @@ class _SafetyMapState extends State<SafetyMap> {
             mapToolbarEnabled: false,
             trafficEnabled: false, // Show traffic information
           ),
-
+          _buildCustomAppBar(),
           // Search Bar
           Positioned(
-            top: 10,
+            top: 140,
             left: 16,
             right: 16,
             child: Container(
@@ -3137,7 +3235,7 @@ class _SafetyMapState extends State<SafetyMap> {
           // Suggestions List
           if (showSuggestions)
             Positioned(
-              top: 70,
+              top: 200,
               left: 16,
               right: 16,
               child: Container(
@@ -3231,16 +3329,21 @@ class _SafetyMapState extends State<SafetyMap> {
                         itemCount: availableRoutes.length,
                         itemBuilder: (context, index) {
                           final route = availableRoutes[index];
+                          final isSelected = index == selectedRouteIndex;
+
                           return GestureDetector(
-                            onTap: () => _selectRoute(index),
+                            onTap: () {
+                              _selectRoute(index);
+                              selectedRouteIndex=index;
+                              },
                             child: Container(
                               margin: const EdgeInsets.only(right: 12),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: index == 0 ? Colors.blue.shade50 : Colors.grey.shade100,
+                                color: isSelected ? Colors.blue.shade50 : Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: index == 0 ? Colors.blue : Colors.grey.shade300,
+                                  color: isSelected ? Colors.blue : Colors.grey.shade300,
                                   width: 2,
                                 ),
                               ),
@@ -3251,7 +3354,7 @@ class _SafetyMapState extends State<SafetyMap> {
                                     route.distance,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: index == 0 ? Colors.blue : Colors.black87,
+                                      color: isSelected ? Colors.blue : Colors.black87,
                                     ),
                                   ),
                                   Text(
@@ -3289,12 +3392,16 @@ class _SafetyMapState extends State<SafetyMap> {
               color: Colors.black.withOpacity(0.3),
               child: const Center(
                 child: Card(
+                  color: Colors.white,
                   child: Padding(
                     padding: EdgeInsets.all(20),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(),
+                        CircularProgressIndicator(
+                          color: Colors.black,
+                          strokeWidth: 3,
+                        ),
                         SizedBox(height: 16),
                         Text('Loading...'),
                       ],
@@ -3306,7 +3413,7 @@ class _SafetyMapState extends State<SafetyMap> {
 
           // Control Buttons
           Positioned(
-            bottom: availableRoutes.isNotEmpty ? 140 : 30,
+            bottom: availableRoutes.isNotEmpty ? 200 : 30,
             right: 16,
             child: Column(
               children: [

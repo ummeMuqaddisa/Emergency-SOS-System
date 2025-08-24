@@ -375,7 +375,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _submitFeedback,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
+                          backgroundColor: const Color(0xFF3B82F6),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
