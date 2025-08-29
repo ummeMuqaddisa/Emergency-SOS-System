@@ -33,6 +33,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
 
   // Data subscriptions
   StreamSubscription<QuerySnapshot>? _stationsSubscription;
+  StreamSubscription<QuerySnapshot>? _hospitalsSubscription;
   StreamSubscription<QuerySnapshot>? _alertSubscription;
   StreamSubscription<QuerySnapshot>? _usersSubscription;
   StreamSubscription<QuerySnapshot>? _feedbackSubscription;
@@ -45,6 +46,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   // Statistics
   int _totalUsers = 0;
   int _totalStations = 0;
+  int _totalHospitals = 0;
   int _totalAlerts = 0;
   int _activeAlerts = 0;
   int _safeAlerts = 0;
@@ -54,6 +56,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   List<Map<String, dynamic>> _usersList = [];
   List<Map<String, dynamic>> _alertsList = [];
   List<Map<String, dynamic>> _stationsList = [];
+  List<Map<String, dynamic>> _hospitalsList = [];
   List<Map<String, dynamic>> _feedbackList = [];
 
   // Search controllers
@@ -116,6 +119,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   void dispose() {
     _positionStream?.cancel();
     _stationsSubscription?.cancel();
+    _hospitalsSubscription?.cancel();
     _alertSubscription?.cancel();
     _usersSubscription?.cancel();
     _feedbackSubscription?.cancel();
@@ -167,6 +171,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     _loadAlertsData();
     _loadUsersData();
     _loadStationsData();
+    _loadHospitalsData();
     _loadFeedbackData();
   }
 
@@ -267,6 +272,29 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         _totalStations = stations.length;
       });
     });
+  }
+
+  void _loadHospitalsData() {
+    _hospitalsSubscription?.cancel();
+    _hospitalsSubscription = FirebaseFirestore.instance
+        .collection('/Resources/Hospitals/hospitals')
+        .snapshots()
+        .listen((QuerySnapshot querySnapshot) {
+      if (!mounted) return;
+
+      final List<Map<String, dynamic>> hospitals = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        hospitals.add(data);
+      }
+
+      setState(() {
+        _hospitalsList = hospitals;
+        _totalHospitals = hospitals.length;
+      });
+    });
+
   }
 
   void _loadFeedbackData() {
@@ -538,7 +566,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           ),
                           child: const Icon(
                             Icons.local_police,
-                           color: Colors.white,
+                            color: Colors.white,
                             size: 25,
                           ),
                         ),
@@ -586,6 +614,141 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load stations: ${e.toString()}';
+      });
+    }
+  }
+
+  Future<void> _loadAllHospitalMarkers() async {
+    _hospitalsSubscription?.cancel();
+
+    try {
+      _hospitalsSubscription = FirebaseFirestore.instance
+          .collection('/Resources/Hospitals/hospitals')
+          .snapshots()
+          .listen((QuerySnapshot querySnapshot) {
+        if (!mounted) return;
+
+        final List<Marker> loadedMarkers = [];
+        int hospitalCount = 0;
+
+        for (var doc in querySnapshot.docs) {
+          try {
+            final data = doc.data() as Map<String, dynamic>;
+            final location = data['location'];
+            if (location == null) continue;
+
+            double? latitude;
+            double? longitude;
+
+            if (location is Map<String, dynamic>) {
+              latitude = location['latitude']?.toDouble();
+              longitude = location['longitude']?.toDouble();
+            } else if (location is List && location.length >= 2) {
+              latitude = location[0]?.toDouble();
+              longitude = location[1]?.toDouble();
+            }
+
+            if (latitude == null || longitude == null) continue;
+            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) continue;
+            final marker = Marker(
+              width: 40,
+              height: 50,
+              point: LatLng(latitude, longitude),
+              child: GestureDetector(
+                onTap: () {
+                  _showHospitalInfoDialog(data);
+                } ,
+                child: Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    // Shadow
+                    Transform.translate(
+                      offset: const Offset(2, 3),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          Container(
+                            width: 0,
+                            height: 0,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                left: BorderSide(width: 8, color: Colors.transparent),
+                                right: BorderSide(width: 8, color: Colors.transparent),
+                                bottom: BorderSide(width: 14, color: Colors.black12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Main pin shape
+                    Column(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Color(0xFF2196F3),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.local_hospital_rounded,
+                            color: Colors.white,
+                            size: 25,
+                          ),
+                        ),
+                        Transform.translate(
+                          offset: const Offset(0, 10),
+                          child: Container(
+                            width: 0,
+                            height: 0,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                left: BorderSide(width: 8, color: Colors.transparent),
+                                right: BorderSide(width: 8, color: Colors.transparent),
+                                bottom: BorderSide(width: 14,  color: Color(0xFF2196F3),),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+            loadedMarkers.add(marker);
+            hospitalCount++;
+          } catch (e) {
+            debugPrint('Error processing hospital ${doc.id}: $e');
+          }
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _markers.clear();
+          _markers.addAll(loadedMarkers);
+          _totalHospitals = hospitalCount;
+          _currentView = 'hospitals';
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _isMapReady) {
+            _fitMarkersInView();
+          }
+        });
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load hospitals: ${e.toString()}';
       });
     }
   }
@@ -1255,6 +1418,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       }
       Navigator.pop(context);
       _loadAllStationMarkers();
+      _loadStationsData();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1524,6 +1688,34 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     );
   }
 
+  Widget _buildHospitalsListView() {
+    final filteredHospitals = _hospitalsList.where((hospital) {
+      if (_searchQuery.isEmpty) return true;
+      final name = hospital['hospitalName']?.toString().toLowerCase() ?? '';
+      final address = hospital['address']?.toString().toLowerCase() ?? '';
+      return name.contains(_searchQuery.toLowerCase()) ||
+          address.contains(_searchQuery.toLowerCase());
+    }).toList();
+
+    return Column(
+      children: [
+        _buildSearchBar('Search hospital...'),
+        Expanded(
+          child: filteredHospitals.isEmpty
+              ? _buildEmptyState('No hospital found', Icons.local_police_outlined)
+              : ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: filteredHospitals.length,
+            itemBuilder: (context, index) {
+              final hospital = filteredHospitals[index];
+              return _buildHospitalCard(hospital, index);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStationCard(Map<String, dynamic> station, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1635,6 +1827,164 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                       _buildInfoRow(
                         Icons.phone_outlined,
                         station['phone']?.toString() ?? 'No phone',
+                        const Color(0xFF10B981),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Service Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          '24/7 Service Available',
+                          style: TextStyle(
+                            color: Color(0xFF3B82F6),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action Arrow
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHospitalCard(Map<String, dynamic> hospital, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showHospitalInfoDialog(hospital),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF3B82F6).withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.local_hospital_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              hospital['hospitalName'] ?? 'Unknown hospital',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'ACTIVE',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Contact Info
+                      _buildInfoRow(
+                        Icons.location_on_outlined,
+                        hospital['address'] ?? 'No address',
+                        const Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildInfoRow(
+                        Icons.phone_outlined,
+                        hospital['phone']?.toString() ?? 'No phone',
                         const Color(0xFF10B981),
                       ),
                       const SizedBox(height: 8),
@@ -1874,9 +2224,9 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
             // Action Buttons Row
             Row(
               children: [
-               Expanded(
-                 child: Container(),
-               ),
+                Expanded(
+                  child: Container(),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Container(),
@@ -2481,6 +2831,157 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           _buildEnhancedInfoRow('Longitude', stationData['location']['longitude']?.toString() ?? 'Not available', Icons.place),
                         ],
                       ]),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(onPressed: (){
+                          print(stationData['id']);
+                          FirebaseFirestore.instance.collection('/Resources/PoliceStations/Stations').doc(stationData['id']).delete();
+                          setState(() {
+                            _loadStationsData();
+                          });
+                          Navigator.pop(context);
+                        }, icon: Icon(Icons.delete,size: 30,color: Colors.red,)),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHospitalInfoDialog(Map<String, dynamic> hospitalData) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 800,
+          constraints: const BoxConstraints(maxHeight: 600),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.local_hospital_rounded,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            hospitalData['hospitalName'] ?? 'Unknown hospital',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'Hospitals',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content Section
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionHeader('Hospital Information', Icons.info_outline),
+                      const SizedBox(height: 20),
+                      _buildInfoCard([
+                        _buildEnhancedInfoRow('Hospital Name', hospitalData['hospitalName'] ?? 'Not provided', Icons.local_police),
+                        _buildEnhancedInfoRow('Address', hospitalData['address'] ?? 'Not provided', Icons.location_on_outlined),
+                        _buildEnhancedInfoRow('Phone Number', hospitalData['phone']?.toString() ?? 'Not provided', Icons.phone_outlined),
+                        if (hospitalData['location'] != null) ...[
+                          _buildEnhancedInfoRow('Latitude', hospitalData['location']['latitude']?.toString() ?? 'Not available', Icons.my_location),
+                          _buildEnhancedInfoRow('Longitude', hospitalData['location']['longitude']?.toString() ?? 'Not available', Icons.place),
+                        ],
+                      ]),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(onPressed: (){
+                          FirebaseFirestore.instance.collection('/Resources/Hospitals/hospitals').doc(hospitalData['id']).delete();
+                          setState(() {
+
+                          });
+                          Navigator.pop(context);
+                        }, icon: Icon(Icons.delete,size: 30,color: Colors.red,)),
+                      )
                     ],
                   ),
                 ),
@@ -2558,7 +3059,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
-                           Icons.warning,
+                          Icons.warning,
                           color: Colors.white,
                           size: 40,
                         ),
@@ -2835,7 +3336,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                               Icons.warning,
+                              Icons.warning,
                               size: 16,
                               color: alertData['severity']!=1 ? const Color(0xFFE53E3E) : const Color(0xFFFF9800),
                             ),
@@ -3231,6 +3732,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                       _buildNavItem(2, Icons.people, 'All Users', badge: _totalUsers.toString()),
                       _buildNavItem(3, Icons.warning, 'All Alerts', badge: _totalAlerts.toString()),
                       _buildNavItem(4, Icons.local_police, 'All Stations', badge: _totalStations.toString()),
+                      _buildNavItem(8, Icons.local_hospital_rounded, 'All Hospitals', badge: _totalHospitals.toString()),
                       _buildNavItem(5, Icons.feedback, 'All Feedback', badge: _totalFeedback.toString()),
                       const Divider(color: Color(0xFF2D3748), height: 32),
                       _buildNavItem(6, Icons.analytics, 'Analytics'),
@@ -3310,56 +3812,56 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                                 );
                               } else if (value == 'logout') {
                                 final bool? confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    backgroundColor: Colors.white,
-                                    surfaceTintColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12.0),
-                                    ),
-                                    title: const Text(
-                                      'Logout',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      backgroundColor: Colors.white,
+                                      surfaceTintColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12.0),
                                       ),
-                                    ),
-                                    content: const Text(
-                                      'Are you sure you want to logout from your account?',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                    actions: [
-                                      // Cancel button
-                                      OutlinedButton(
-                                        onPressed: () => Navigator.of(context).pop(false),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.grey,
-                                          side: BorderSide(color: Colors.grey.shade400),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
+                                      title: const Text(
+                                        'Logout',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
                                         ),
-                                        child: const Text('Cancel'),
                                       ),
+                                      content: const Text(
+                                        'Are you sure you want to logout from your account?',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      actions: [
+                                        // Cancel button
+                                        OutlinedButton(
+                                          onPressed: () => Navigator.of(context).pop(false),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.grey,
+                                            side: BorderSide(color: Colors.grey.shade400),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                          ),
+                                          child: const Text('Cancel'),
+                                        ),
 
-                                      // Logout button
-                                      ElevatedButton(
-                                        onPressed: () => Navigator.of(context).pop(true),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(6),
+                                        // Logout button
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.of(context).pop(true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
                                           ),
+                                          child: const Text('Logout'),
                                         ),
-                                        child: const Text('Logout'),
-                                      ),
-                                    ],
-                                  )
+                                      ],
+                                    )
                                 );
 
                                 if (confirm == true) {
@@ -3432,7 +3934,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           });
                           _initializeMap();
 
-                            _loadAllData();
+                          _loadAllData();
 
                         },
                       ),
@@ -3449,6 +3951,12 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                         icon: Icon(Icons.add),
                         onPressed: () {
                           _showAddStationModal(context);
+                        },
+                      ):Container(),
+                      _selectedNavIndex == 8 ? IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: () {
+                          _showAddHospitalModal(context);
                         },
                       ):Container(),
                     ],
@@ -3486,6 +3994,8 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         return _buildAnalyticsView();
       case 7:
         return _buildSettingsView();
+      case 8:
+        return _buildHospitalsListView();
       default:
         return _buildDashboardView();
     }
@@ -3514,6 +4024,15 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                   'Police Stations',
                   _totalStations.toString(),
                   Icons.local_police,
+                  const Color(0xFF2196F3),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildDashboardCard(
+                  'Hospitals',
+                  _totalHospitals.toString(),
+                  Icons.local_hospital_rounded,
                   const Color(0xFF2196F3),
                 ),
               ),
@@ -3789,8 +4308,16 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                               _loadAllUserMarkers,
                             ),
                           ),
-
-                          Expanded(child: Container())
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildControlButton(
+                              'Hospitals',
+                              Icons.local_hospital_rounded,
+                              const Color(0xFF78120C),
+                              _currentView == 'hospitals',
+                              _loadAllHospitalMarkers,
+                            ),
+                          ),
 
                         ],
                       ),
@@ -3880,30 +4407,36 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Live Statistics',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                    child: SingleChildScrollView(
+
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Live Statistics',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildStatCard('Total Users', _totalUsers, Icons.people, const Color(0xFF4CAF50)),
-                        const SizedBox(height: 12),
-                        _buildStatCard('Police Stations', _totalStations, Icons.local_police, const Color(0xFF2196F3)),
-                        const SizedBox(height: 12),
-                        _buildStatCard('Total Alerts', _totalAlerts, Icons.warning, const Color(0xFFFF9800)),
-                        const SizedBox(height: 12),
-                        _buildStatCard('Active Alerts', _activeAlerts, Icons.notification_important, const Color(0xFFFF5722)),
-                        const SizedBox(height: 12),
-                        if (_currentView == 'alerts') ...[
+                          const SizedBox(height: 20),
+                          _buildStatCard('Total Users', _totalUsers, Icons.people, const Color(0xFF4CAF50)),
                           const SizedBox(height: 12),
-                          _buildStatCard('Safe Alerts', _safeAlerts, Icons.check_circle, const Color(0xFF4CAF50)),
+                          _buildStatCard('Police Stations', _totalStations, Icons.local_police, const Color(0xFF2196F3)),
+                          const SizedBox(height: 12),
+                          _buildStatCard('Total Hospitals', _totalHospitals, Icons.local_hospital_rounded, const Color(
+                              0xFF78120C)),
+                          const SizedBox(height: 12),
+                          _buildStatCard('Total Alerts', _totalAlerts, Icons.warning, const Color(0xFFFF9800)),
+                          const SizedBox(height: 12),
+                          _buildStatCard('Active Alerts', _activeAlerts, Icons.notification_important, const Color(0xFFFF5722)),
+                          const SizedBox(height: 12),
+                          if (_currentView == 'alerts') ...[
+                            const SizedBox(height: 12),
+                            _buildStatCard('Safe Alerts', _safeAlerts, Icons.check_circle, const Color(0xFF4CAF50)),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -4083,6 +4616,8 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         return 'Analytics';
       case 7:
         return 'Settings';
+      case 8:
+        return 'All Hospitals';
       default:
         return 'Admin Dashboard';
     }
@@ -4106,6 +4641,8 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         return 'analytics';
       case 7:
         return 'settings';
+      case 8:
+        return 'hospitals';
       default:
         return 'dashboard';
     }
@@ -4201,5 +4738,222 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
         );
       },
     );
+  }
+
+  // Controllers for the add hospital form
+  final TextEditingController _hospitalNameController = TextEditingController();
+  void _showAddHospitalModal(context) {
+    _hospitalNameController.clear();
+    _addressController.clear();
+    _latitudeController.clear();
+    _longitudeController.clear();
+    _phoneController.clear();
+
+    showModalBottomSheet(
+
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.65,
+          width: MediaQuery.of(context).size.width * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_hospital_rounded, color: Color(0xFF3B82F6), size: 28),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Add New Hospital',
+                        style: TextStyle(
+                          color: Color(0xFF1F2937),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Color(0xFF6B7280)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTextField(
+                          controller: _hospitalNameController,
+                          label: 'Hospital Name',
+                          hint: 'Enter hospital name',
+                          icon: Icons.local_hospital_rounded,
+                          validator: (value) => value!.isEmpty ? 'Hospital name cannot be empty' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _addressController,
+                          label: 'Address',
+                          hint: 'Enter full address',
+                          icon: Icons.location_on_outlined,
+                          validator: (value) => value!.isEmpty ? 'Address cannot be empty' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _latitudeController,
+                                label: 'Latitude',
+                                hint: 'e.g., 23.769',
+                                icon: Icons.map_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value!.isEmpty) return 'Latitude cannot be empty';
+                                  if (double.tryParse(value) == null) return 'Invalid number';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildTextField(
+                                controller: _longitudeController,
+                                label: 'Longitude',
+                                hint: 'e.g., 90.425',
+                                icon: Icons.map_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value!.isEmpty) return 'Longitude cannot be empty';
+                                  if (double.tryParse(value) == null) return 'Invalid number';
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _phoneController,
+                          label: 'Phone Number (Optional)',
+                          hint: 'Enter phone number',
+                          icon: Icons.phone_outlined,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: _isLoading
+                                ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                                : const Icon(Icons.save_outlined, size: 20),
+                            label: Text(_isLoading ? 'Saving...' : 'Save Hospital'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3B82F6),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: _isLoading ? null : _addHospital,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addHospital() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final newHospitalRef = FirebaseFirestore.instance.collection('Resources/Hospitals/hospitals');
+      final newHospitalData = {
+        'hospitalId': _hospitalNameController.text.trim(),
+        'hospitalName': _hospitalNameController.text.trim(),
+        'address': _addressController.text.trim(),
+        'location': {
+          'latitude': double.parse(_latitudeController.text.trim()),
+          'longitude': double.parse(_longitudeController.text.trim()),
+        },
+        'phone': _phoneController.text.trim(),
+        'timestamp': FieldValue.serverTimestamp(),
+      };
+
+      await newHospitalRef.doc(_hospitalNameController.text.trim()).set(newHospitalData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hospital added successfully!'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.black,
+          ),
+        );
+      }
+      Navigator.pop(context);
+      _loadHospitalsData();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding hospital: $e'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: Colors.black,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }
