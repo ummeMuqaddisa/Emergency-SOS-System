@@ -196,7 +196,7 @@ class _profileState extends State<profile> {
         },
         style: ElevatedButton.styleFrom(
           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          backgroundColor: Colors.blue,
+          backgroundColor: Color(0xFF1F2937),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
@@ -506,8 +506,8 @@ class _profileState extends State<profile> {
                                   isEditing ?
                                   TextFormField(
                                     controller: _msgController,
-                                    decoration: InputDecoration(labelText: 'Emergency Message', prefixIcon: Icon(Icons.sms_failed), border: OutlineInputBorder()),
-                                  ) : _buildInfoRow(Icons.sms_failed, "Emergency Message", user.msg),
+                                    decoration: InputDecoration(labelText: 'Emergency Message', prefixIcon: Icon(Icons.sms_outlined), border: OutlineInputBorder()),
+                                  ) : _buildInfoRow(Icons.sms_outlined, "Emergency Message", user.msg),
                                   ],
                               ),
                             )

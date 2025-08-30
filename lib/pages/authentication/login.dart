@@ -179,6 +179,8 @@ class _loginState extends State<login> {
   Widget build(BuildContext context) {
     if (loading) {
       return Scaffold(
+        appBar: AppBar(backgroundColor: Colors.white,),
+        backgroundColor: Colors.white,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -206,8 +208,8 @@ class _loginState extends State<login> {
       );
     } else {
       return Scaffold(
+        appBar: AppBar(backgroundColor: Colors.white,),
         backgroundColor: Colors.white,
-        appBar: AppBar(),
         body: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
@@ -215,23 +217,26 @@ class _loginState extends State<login> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // SizedBox(height: 40),
-                  // // Logo container
-                  // Container(
-                  //   height: 120,
-                  //   width: 120,
-                  //   decoration: BoxDecoration(
-                  //
-                  //     borderRadius: BorderRadius.circular(20),
-                  //     boxShadow: [
-                  //       BoxShadow(
-                  //         color: Colors.black.withOpacity(0.1),
-                  //         blurRadius: 10,
-                  //         offset: Offset(0, 4),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
+                  SizedBox(height: 40),
+                  // Logo container
+                  Container(
+                    height: 120,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/rlogo.png'),
+                        fit: BoxFit.cover,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                  ),
                   SizedBox(height: 40),
                   // Welcome text
                   Text(
@@ -334,7 +339,7 @@ class _loginState extends State<login> {
                     height: 56,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
+                        backgroundColor: Color(0xff25282b),
                         foregroundColor: Colors.white,
                         elevation: 2,
                         shape: RoundedRectangleBorder(

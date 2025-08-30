@@ -12,7 +12,6 @@ import 'package:resqmob/test.dart';
 import 'package:resqmob/wrapper.dart';
 import 'backend/firebase config/firebase message.dart';
 import 'backend/firebase config/firebase_options.dart';
-import 'backend/permission handler/background location.dart';
 
 
 
@@ -47,7 +46,6 @@ try {
     await FirebaseMessaging.instance.getToken(
         vapidKey: "BLwCHwZWPFgo5l5EpYdly8u2Fv0kxwVnTw1e3r5Fx21zbkFs5TapD369ibH1FQoa7mKbR-CyzfOHi0oQW2_OPR0");
   }
-
   }catch(e){
     print(e.toString());
 }

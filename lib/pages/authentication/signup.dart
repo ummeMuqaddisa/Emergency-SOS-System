@@ -161,7 +161,8 @@ class _signupState extends State<signup> {
     }
 
     return Scaffold(
-      appBar: AppBar(),
+      backgroundColor: Colors.white,
+      appBar: AppBar(backgroundColor: Colors.white,),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -343,7 +344,7 @@ class _signupState extends State<signup> {
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:   Colors.black,
+                      backgroundColor:   Color(0xff25282b),
                       foregroundColor: Colors.white,
                       elevation: 2,
                       shape: RoundedRectangleBorder(

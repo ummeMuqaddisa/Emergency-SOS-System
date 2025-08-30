@@ -878,10 +878,10 @@ class _ViewActiveAlertsScreenState extends State<ViewActiveAlertsScreen> with Ti
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withOpacity(0.1),
+              color: Color(0xff25282b).withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+            child: Icon(icon, color: Color(0xff25282b), size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(

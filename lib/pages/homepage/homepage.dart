@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -11,12 +12,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:hugeicons/hugeicons.dart';
 import 'package:resqmob/backend/sms.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/alert%20listing/view%20active%20alerts.dart';
 import 'package:resqmob/pages/alert%20listing/view%20my%20alerts.dart';
-import 'package:resqmob/pages/homepage/safe%20road.dart';
+import 'package:resqmob/pages/safe%20map/safe%20road.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:resqmob/test.dart';
 import '../../Class Models/alert.dart';
@@ -61,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
   var imageLink;
   LatLng? _navigationDestination;
   bool isDanger = false;
+  bool isBanned = false;
   final Set<Polyline> _polylines = {};
 
   // Add these flags to track map state more robustly
@@ -70,10 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    print(widget.navlng);
-    print(widget.navlat);
     super.initState();
-
     //home widget init
     WidgetService.initialize();
     WidgetService.onDataReceived = _handleWidgetData;
@@ -116,7 +116,6 @@ class _MyHomePageState extends State<MyHomePage> {
     ).listen((Position pos) async {
       if (!mounted) return;
 
-      // Safe camera animation with proper checks and error recovery
       _safeAnimateTo(pos);
 
       setState(() {
@@ -124,6 +123,21 @@ class _MyHomePageState extends State<MyHomePage> {
       });
 
 
+
+      try {
+        if (isDanger) {
+          await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .update({
+            "lat": pos.latitude,
+            "lng": pos.longitude,
+            "lastUpdated": FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        print("⚠️ Error updating location: $e");
+      }
 
 
       print('1');
@@ -153,14 +167,21 @@ class _MyHomePageState extends State<MyHomePage> {
         if (doc.exists && mounted) {
           setState(() {
             isDanger = doc.get('isInDanger');
+            final ban= doc.get('token');
+            if(ban=='normal') isBanned=false;
+            else if(ban=='blocked')
+              isBanned=true;
           });
           imageLink = doc.get("profileImageUrl");
           currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
         }
       }).catchError((e) => print('Error: $e'));
+
     } catch (e) {
       print(e);
     }
+
+
   }
 
   @override
@@ -538,37 +559,6 @@ getnavpoly()async{
     }
   }
 
-  void _fitMarkersInView() {
-    if (_markers.isEmpty || _mapController == null || !_isMapReady ||
-        !mounted || _isControllerDisposed) return;
-
-    double minLat = _markers.first.position.latitude;
-    double maxLat = _markers.first.position.latitude;
-    double minLng = _markers.first.position.longitude;
-    double maxLng = _markers.first.position.longitude;
-
-    for (Marker marker in _markers) {
-      minLat =
-      minLat < marker.position.latitude ? minLat : marker.position.latitude;
-      maxLat =
-      maxLat > marker.position.latitude ? maxLat : marker.position.latitude;
-      minLng =
-      minLng < marker.position.longitude ? minLng : marker.position.longitude;
-      maxLng =
-      maxLng > marker.position.longitude ? maxLng : marker.position.longitude;
-    }
-
-    _safeAnimateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
-        ),
-        100.0, // padding
-      ),
-    );
-  }
-
   Future<void> _getDirections(LatLng origin, LatLng destination) async {
     if (!mounted) return;
 
@@ -841,7 +831,7 @@ getnavpoly()async{
                       icon: const Icon(Icons.navigation, size: 20),
                       label: const Text('Start Navigation'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
+                        backgroundColor: Color(0xff25282b),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -903,10 +893,10 @@ getnavpoly()async{
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withOpacity(0.1),
+              color: Color(0xff25282b).withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+            child: Icon(icon, color: Color(0xff25282b), size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1003,7 +993,7 @@ getnavpoly()async{
             FirebaseApi().sendNotification(
                 token: fcm,
                 title: 'Alert',
-                body: 'help!!!',
+                body: 'Need help!!!',
                 userId: ouser.id,
                 latitude: _currentPosition?.latitude,
                 longitude: _currentPosition?.longitude,
@@ -1218,7 +1208,10 @@ getnavpoly()async{
                   body: 'help meeeeeeeeeeeeee',
                   userId: ouser.id,
                   latitude: _currentPosition?.latitude,
-                  longitude: _currentPosition?.longitude);
+                  longitude: _currentPosition?.longitude,
+                  distance: distance.toStringAsFixed(2),
+                  alertId: alert2.alertId
+              );
               print('alert sent to ${ouser.name}, distance: $distance');
               notified = notified + 1;
             }
@@ -1370,7 +1363,7 @@ getnavpoly()async{
                         backgroundImage: (imageLink != null && imageLink.isNotEmpty) ? NetworkImage(imageLink) : null,
                         backgroundColor: const Color(0xFFF3F4F6),
                         child: (imageLink == null || imageLink.isEmpty)
-                            ? const Icon(Icons.person, size: 16, color: Color(0xFF6B7280))
+                            ? const HugeIcon(icon: HugeIcons.strokeRoundedUser03, color: Colors.grey,size: 16,)
                             : null,
                       ),
                     ),
@@ -1513,7 +1506,6 @@ getnavpoly()async{
 
 
   int _currentIndex = 3;
-
 
   @override
   Widget build(BuildContext context) {
@@ -1803,7 +1795,7 @@ getnavpoly()async{
                 FloatingActionButton(
                   backgroundColor: Colors.white,
                   onPressed: (){
-                    //sendSos(['01839228924'] , 'saif', 0, 0);
+                    sendSos(['01839228924'] , 'saif', 0, 0);
 
 
                   },
@@ -1816,7 +1808,7 @@ getnavpoly()async{
                   backgroundColor: Colors.white,
                   onPressed: _getCurrentLocation,
                   heroTag: "location_1",
-                  child: FaIcon(FontAwesomeIcons.locationCrosshairs, color: Colors.black,size: 20,),
+                  child: HugeIcon(icon:HugeIcons.strokeRoundedGps01 , color: Colors.black),
                 ),
                 const SizedBox(height: 8),
                 FloatingActionButton(
@@ -1827,7 +1819,7 @@ getnavpoly()async{
                       CameraUpdate.newCameraPosition(_initialPosition),
                     );},
                   heroTag: "location_2",
-                  child: FaIcon(FontAwesomeIcons.mapLocationDot, color: Colors.black,size: 19,),
+                  child:HugeIcon(icon:HugeIcons.strokeRoundedMapsLocation02 , color: Colors.black),
                 ),
               ],
             ),
@@ -1837,11 +1829,12 @@ getnavpoly()async{
             bottom: 35,
             right: 16,
             child: FloatingActionButton(
-              backgroundColor: Colors.blue,
+              backgroundColor: Color(0xFF1F2937),
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
+                    backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     title: Row(
                       children: [
@@ -1880,7 +1873,7 @@ getnavpoly()async{
 
                         child: const Text('Yes, I\'m Safe'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Color(0xFF1F2937),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -1993,7 +1986,7 @@ getnavpoly()async{
         children: _pages,
       ),
       floatingActionButton: _currentIndex == 3
-          ? FloatingActionButton.large(
+          ?( !isBanned? FloatingActionButton.large(
         backgroundColor: Colors.red,
         elevation: 0,
         onPressed: () {
@@ -2005,7 +1998,38 @@ getnavpoly()async{
           color: Colors.white,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-      )
+      ):FloatingActionButton.large(
+        backgroundColor: Colors.black87.withOpacity(0.2),
+        elevation: 0,
+        onPressed: (){
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.warning_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('You are blocked from using this app')),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        },
+        child: Icon(
+          Icons.notifications_off,
+          size: 50,
+          color: Colors.black87,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+      ) )
           : FloatingActionButton(
         backgroundColor: Colors.red,
         elevation: 0,
@@ -2023,8 +2047,8 @@ getnavpoly()async{
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        height: 91,
-        color: Color(0xFF7892ff).withOpacity(1),
+        height: 89,
+        color: Color(0xff25282b),
         notchMargin: 8,
         shape: CircularNotchedRectangle(),
         child: Row(
@@ -2049,9 +2073,9 @@ getnavpoly()async{
                           _currentIndex = 0;
                         });
                       },
-                      icon: Icon(Icons.crisis_alert_rounded, size: 28, color: Colors.white),
+                      icon: HugeIcon(icon: HugeIcons.strokeRoundedAlert01, color:_currentIndex==0? Colors.white:Colors.white.withOpacity(0.6),size: 30,),
                     ),
-                    Text('Active Alerts', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500))
+                    Text('Active Alerts', style: TextStyle(color:_currentIndex==0? Colors.white:Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w500))
                   ],
                 ),
               ),
@@ -2082,9 +2106,9 @@ getnavpoly()async{
                             _currentIndex = 1;
                           });
                         },
-                        icon: Icon(Icons.navigation_rounded, size: 28, color: Colors.white),
+                        icon: HugeIcon(icon: HugeIcons.strokeRoundedNavigator01, color:_currentIndex==1? Colors.white:Colors.white.withOpacity(0.6),size: 30,),
                       ),
-                      Text('Safe Road', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500))
+                      Text('Safe Map', style: TextStyle(color:_currentIndex==1? Colors.white:Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w500))
                     ]
                 ),
               ),
@@ -2155,6 +2179,7 @@ getnavpoly()async{
         context: context,
         builder: (context) {
           return AlertDialog(
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text(
               title,
@@ -2180,6 +2205,10 @@ getnavpoly()async{
                   Row(children: [
                     const Text("Location: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
                     Expanded(child: Text(alert.address ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
+                  ]),
+                  Row(children: [
+                    const Text("User: ", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+                    Expanded(child: Text(alert.userName ?? 'N/A', style: const TextStyle(color: Color(0xFF374151)))),
                   ]),
 
                   Row(children: [

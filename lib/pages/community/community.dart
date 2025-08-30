@@ -1437,12 +1437,12 @@ class _RedditStyleCommentsBottomSheetState extends State<RedditStyleCommentsBott
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: primaryRed.withOpacity(0.1),
+                    backgroundColor:Color(0xFF1F2937).withOpacity(0.1),
                     backgroundImage: currentComment.userProfileImage.isNotEmpty
                         ? NetworkImage(currentComment.userProfileImage)
                         : null,
                     child: currentComment.userProfileImage.isEmpty
-                        ? Icon(Icons.person, color: primaryRed, size: 18)
+                        ? Icon(Icons.person, color: Color(0xFF1F2937), size: 18)
                         : null,
                   ),
                   if (depth == 0)

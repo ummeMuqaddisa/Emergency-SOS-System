@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 // Please add the correct dependency to your pubspec.yaml file.
 import 'package:hugeicons/hugeicons.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
-import 'package:resqmob/pages/homepage/safe%20road.dart';
+import 'package:resqmob/pages/safe%20map/safe%20road.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import '../../test.dart';
 import '../admin/resources/feedback.dart';
-import 'help page.dart';
-import 'hospitals.dart';
-import 'police stations.dart';
+import '../station and hospitals/police stations.dart';
+import '../chatbot/help page.dart';
+import '../station and hospitals/hospitals.dart';
 import '../alert listing/my responded alert.dart';
 import '../alert listing/view my alerts.dart';
 import '../community/community.dart';
@@ -177,14 +177,34 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-          _buildDrawerItem(
-            icon: HugeIcons.strokeRoundedSettings02,
-            title: 'Settings',
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to settings screen
-            },
+          Container(
+            padding: const EdgeInsets.only(left: 5),
+            margin: const EdgeInsets.only(right: 15),
+            child: ListTile(
+              leading: HugeIcon(
+                icon: HugeIcons.strokeRoundedSettings02,
+                color: Colors.black.withOpacity(0.4),
+                size: 23,
+              ),
+              title: Text(
+                'Settings',
+                style: TextStyle(
+                  fontSize: 15,
+                  color:Colors.black.withOpacity(0.4),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap:null,
+            ),
           ),
+          // _buildDrawerItem(
+          //   icon: HugeIcons.strokeRoundedSettings02,
+          //   title: 'Settings',
+          //   onTap: () {
+          //     Navigator.pop(context);
+          //     // Navigate to settings screen
+          //   },
+          // ),
           _buildDrawerItem(
             icon: HugeIcons.strokeRoundedHelpSquare,
             title: 'Help & Tutorial',
@@ -238,7 +258,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.19',
+                  'Version 1.2.20',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,
@@ -262,8 +282,8 @@ class AppDrawer extends StatelessWidget {
       padding: const EdgeInsets.only(left: 5),
       margin: const EdgeInsets.only(right: 15),
       decoration: isSelected
-          ? const BoxDecoration(
-        color: Color(0XFFE8F0FE),
+          ? BoxDecoration(
+        color: Color(0xff25282b),
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(30),
           bottomRight: Radius.circular(30),
@@ -273,14 +293,14 @@ class AppDrawer extends StatelessWidget {
       child: ListTile(
         leading: HugeIcon(
           icon: icon,
-          color: isSelected ? const Color(0XFF3C88EC) : Colors.black.withOpacity(0.75),
+          color: isSelected ? Colors.white : Colors.black.withOpacity(0.75),
           size: 23,
         ),
         title: Text(
           title,
           style: TextStyle(
             fontSize: 15,
-            color: isSelected ? const Color(0XFF3C88EC) : Colors.black.withOpacity(0.75),
+            color: isSelected ? Colors.white : Colors.black.withOpacity(0.75),
             fontWeight: FontWeight.bold,
           ),
         ),
