@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+// Assuming 'huge_icons' is the package providing the HugeIcon widget.
+// Please add the correct dependency to your pubspec.yaml file.
+import 'package:hugeicons/hugeicons.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/pages/homepage/safe%20road.dart';
 import 'package:resqmob/pages/profile/profile.dart';
@@ -51,7 +54,11 @@ class AppDrawer extends StatelessWidget {
                         ? NetworkImage(currentUser!.profileImageUrl!)
                         : null,
                     child: currentUser?.profileImageUrl == ""
-                        ? const Icon(Icons.person, size: 30, color: Color(0xFF6B7280))
+                        ? HugeIcon(
+                      icon: HugeIcons.strokeRoundedUser03,
+                      size: 30,
+                      color: const Color(0xFF6B7280),
+                    )
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -86,20 +93,16 @@ class AppDrawer extends StatelessWidget {
 
           // Main Drawer Items
           _buildDrawerItem(
-            icon: Icons.home,
+            icon: HugeIcons.strokeRoundedHome03,
             title: 'Home',
             isSelected: activePage==1?true:false,
             onTap: () {
               Navigator.pop(context);
               Navigator.popUntil(context, (route) => route.isFirst);
-              // Navigator.pushReplacement(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => const MyHomePage()),
-              // );
             },
           ),
           _buildDrawerItem(
-            icon: Icons.language,
+            icon: HugeIcons.strokeRoundedUserGroup03,
             title: 'Community',
             isSelected: activePage==2?true:false,
             onTap: () {
@@ -112,8 +115,8 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-            icon: Icons.history_rounded,
-            title: 'My Alers',
+            icon: HugeIcons.strokeRoundedNotification01,
+            title: 'My Alerts',
             isSelected: activePage==3?true:false,
             onTap: () {
               Navigator.pop(context);
@@ -124,7 +127,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-            icon: Icons.handshake_rounded,
+            icon: HugeIcons.strokeRoundedMailReply01,
             title: 'My Responses',
             isSelected: activePage==4?true:false,
             onTap: () {
@@ -136,7 +139,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-            icon: Icons.local_police,
+            icon: HugeIcons.strokeRoundedPoliceBadge,
             title: 'Police Stations',
             isSelected: activePage==5?true:false,
             onTap: () {
@@ -148,7 +151,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-            icon: Icons.local_hospital,
+            icon: HugeIcons.strokeRoundedAmbulance,
             title: 'Nearby Hospitals',
             isSelected: activePage==6?true:false,
             onTap: () {
@@ -175,7 +178,7 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           _buildDrawerItem(
-            icon: Icons.settings,
+            icon: HugeIcons.strokeRoundedSettings02,
             title: 'Settings',
             onTap: () {
               Navigator.pop(context);
@@ -183,7 +186,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-            icon: Icons.help,
+            icon: HugeIcons.strokeRoundedHelpSquare,
             title: 'Help & Tutorial',
             isSelected: activePage==8?true:false,
             onTap: () {
@@ -198,7 +201,7 @@ class AppDrawer extends StatelessWidget {
           ),
           _buildDrawerItem(
             isSelected: activePage==9?true:false,
-            icon: Icons.feedback,
+            icon: HugeIcons.strokeRoundedComment01,
             title: 'Send Feedback',
             onTap: () {
               Navigator.pop(context);
@@ -213,7 +216,7 @@ class AppDrawer extends StatelessWidget {
 
           const Divider(height: 10, indent: 60),
           _buildDrawerItem(
-            icon: Icons.logout,
+            icon: HugeIcons.strokeRoundedLogoutSquare02,
             title: 'Sign Out',
             onTap: () {
               Navigator.pop(context);
@@ -235,7 +238,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.17',
+                  'Version 1.2.19',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,
@@ -268,8 +271,8 @@ class AppDrawer extends StatelessWidget {
       )
           : null,
       child: ListTile(
-        leading: Icon(
-          icon,
+        leading: HugeIcon(
+          icon: icon,
           color: isSelected ? const Color(0XFF3C88EC) : Colors.black.withOpacity(0.75),
           size: 23,
         ),
@@ -303,8 +306,8 @@ class AppDrawer extends StatelessWidget {
         ),
       ),
       child: ListTile(
-        leading: Icon(
-          icon,
+        leading: HugeIcon(
+          icon: icon,
           color: const Color(0XFF3C88EC),
           size: 23,
         ),

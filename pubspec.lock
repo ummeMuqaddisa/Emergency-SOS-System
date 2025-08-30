@@ -576,6 +576,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  hugeicons:
+    dependency: "direct main"
+    description:
+      name: hugeicons
+      sha256: cf172bae0c3ff2e2114324d05e79872081f4cd3c009f5979285fec73a693096a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.11"
   image_picker:
     dependency: "direct main"
     description:
@@ -649,7 +657,7 @@ packages:
     source: hosted
     version: "0.20.2"
   latlong2:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: latlong2
       sha256: "98227922caf49e6056f91b6c56945ea1c7b166f28ffcd5fb8e72fc0b453cc8fe"
