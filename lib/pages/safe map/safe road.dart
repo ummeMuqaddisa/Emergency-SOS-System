@@ -9,9 +9,9 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:resqmob/backend/api%20keys.dart';
-import 'package:resqmob/pages/homepage/safety%20module.dart';
+import 'package:resqmob/pages/safe%20map/safety%20module.dart';
 import '../../Class Models/user.dart';
-import 'drawer.dart';
+import '../homepage/drawer.dart';
 
 class SafetyMap extends StatefulWidget {
   final UserModel? currentUser;
@@ -50,6 +50,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
   Set<Polyline> polylines = {};
   List<PlaceSuggestion> suggestions = [];
   bool showSuggestions = false;
+  bool showcircle = true;
 
   // *** NEW STATE FOR NAVIGATION ***
   bool _isNavigating = false;
@@ -57,7 +58,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
   List<RouteInfo> availableRoutes = [];
 
   // Professional color scheme
-  static const Color primaryColor = Color(0xFF2563EB);
+  static const Color primaryColor = Color(0xff25282b);
   static const Color secondaryColor = Color(0xFF059669);
   static const Color surfaceColor = Color(0xFFFAFAFA);
   static const Color errorColor = Color(0xFFDC2626);
@@ -329,6 +330,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
   // Keep your existing _selectPlace, _initializeDataFromFirebase, and _getDirections methods
   // (I'm keeping them the same but with improved UI feedback)
   Future<void> _getDirections() async {
+    _getCurrentLocation();
     if (currentPosition == null || destinationLocation == null) return;
     try {
       setState(() {
@@ -336,7 +338,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
         availableRoutes.clear();
         _isNavigating = false; // Reset navigation state
       });
-      _showSnackBar('Finding routes...', Colors.blue);
+      _showSnackBar('Finding routes...', Colors.black);
       // Strategy 1: Make 2-3 concurrent requests with different parameters
       List<Future<List<RouteInfo>>> routeRequests = [
         // Primary request - fastest/default
@@ -817,11 +819,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
                 ],
               ),
             ),
-            InkWell(
-              onTap: () {
-              },
-              child: Text(''),
-            ),
+
           ],
         ),
       ),
@@ -1437,6 +1435,24 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
         right: 16,
       child: Column(
         children: [
+          FloatingActionButton(
+            mini: true,
+            backgroundColor: Colors.white,
+            onPressed: () {
+              setState(() {
+                showcircle = !showcircle;
+              });
+            },
+            heroTag: "toggle_danger_points",
+            child: HugeIcon(
+              icon: showcircle
+                  ? HugeIcons.strokeRoundedView
+                  : HugeIcons.strokeRoundedViewOffSlash,
+              color:showcircle
+                  ? Colors.red : Colors.black,
+            ),
+          ),
+
           const SizedBox(height: 8),
           FloatingActionButton(
             mini: true,
@@ -1589,43 +1605,264 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
           GoogleMap(
             style: '''
             [
-              {
-                "elementType": "geometry",
-                "stylers": [{"color": "#f8fafc"}]
-              },
-              {
-                "elementType": "labels.icon",
-                "stylers": [{"visibility": "off"}]
-              },
-              {
-                "elementType": "labels.text.fill",
-                "stylers": [{"color": "#64748b"}]
-              },
-              {
-                "elementType": "labels.text.stroke",
-                "stylers": [{"color": "#ffffff"}]
-              },
-              {
-                "featureType": "road",
-                "elementType": "geometry",
-                "stylers": [{"color": "#ffffff"}]
-              },
-              {
-                "featureType": "road.highway",
-                "elementType": "geometry",
-                "stylers": [{"color": "#e2e8f0"}]
-              },
-              {
-                "featureType": "water",
-                "elementType": "geometry",
-                "stylers": [{"color": "#bfdbfe"}]
-              },
-              {
-                "featureType": "poi.park",
-                "elementType": "geometry",
-                "stylers": [{"color": "#dcfce7"}]
-              }
-            ]
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#ebe3cd"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#523735"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#f5f1e6"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#c9b2a6"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#dcd2be"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "labels",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#ae9e90"
+      }
+    ]
+  },
+  {
+    "featureType": "landscape.natural",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#dfd2ae"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#dfd2ae"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#93817c"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.business",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#a5b076"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#447530"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#f5f1e6"
+      }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#fdfcf8"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#f8c967"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#e9bc62"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway.controlled_access",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#e98d58"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway.controlled_access",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#db8555"
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#806b63"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.line",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#dfd2ae"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.line",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8f7d77"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.line",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#ebe3cd"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.station",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#dfd2ae"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry.fill",
+    "stylers": [
+      {
+        "color": "#b9d3c2"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#92998d"
+      }
+    ]
+  }
+]
             ''',
             mapType: MapType.normal,
             initialCameraPosition: _kDhakaPosition,
@@ -1634,7 +1871,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
               mapController = controller;
             },
             markers: markers,
-            circles: circles,
+            circles:showcircle? circles: {},
             polylines: polylines, // Polylines managed by _updatePolylines
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
