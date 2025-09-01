@@ -3,10 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
-import 'package:latlong2/latlong.dart';
 import '../../Class Models/alert.dart';
 import '../../Class Models/user.dart';
-import '../homepage/drawer.dart';
 
 class ViewActiveAlertsScreen extends StatefulWidget {
   final Position? currentPosition;

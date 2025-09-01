@@ -158,7 +158,7 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: AppDrawer(currentUser: widget.currentUser!, activePage: 4,),
+      drawer: AppDrawer(currentUser: widget.currentUser, activePage: 4,),
       backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
 

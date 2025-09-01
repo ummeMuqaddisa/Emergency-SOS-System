@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-// Assuming 'huge_icons' is the package providing the HugeIcon widget.
-// Please add the correct dependency to your pubspec.yaml file.
 import 'package:hugeicons/hugeicons.dart';
-import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/pages/homepage/setting.dart';
-import 'package:resqmob/pages/safe%20map/safe%20road.dart';
 import 'package:resqmob/pages/profile/profile.dart';
-
 import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
-import '../../test.dart';
 import '../admin/resources/feedback.dart';
 import '../station and hospitals/police stations.dart';
 import '../chatbot/help page.dart';
@@ -17,7 +11,6 @@ import '../station and hospitals/hospitals.dart';
 import '../alert listing/my responded alert.dart';
 import '../alert listing/view my alerts.dart';
 import '../community/community.dart';
-import 'homepage.dart';
 
 class AppDrawer extends StatelessWidget {
   final UserModel? currentUser;
@@ -52,7 +45,7 @@ class AppDrawer extends StatelessWidget {
                     radius: 30,
                     backgroundColor: Colors.grey[200],
                     backgroundImage: currentUser?.profileImageUrl != ""
-                        ? NetworkImage(currentUser!.profileImageUrl!)
+                        ? NetworkImage(currentUser!.profileImageUrl)
                         : null,
                     child: currentUser?.profileImageUrl == ""
                         ? HugeIcon(
@@ -263,7 +256,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.23',
+                  'Version 1.2.24',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,
@@ -306,41 +299,6 @@ class AppDrawer extends StatelessWidget {
           style: TextStyle(
             fontSize: 15,
             color: isSelected ? Colors.white : Colors.black.withOpacity(0.75),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  Widget _buildHighlightedItem({
-    required IconData icon,
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      padding: const EdgeInsets.only(left: 5),
-      margin: const EdgeInsets.only(right: 15),
-      decoration: const BoxDecoration(
-        color: Color(0XFFE8F0FE),
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: ListTile(
-        leading: HugeIcon(
-          icon: icon,
-          color: const Color(0XFF3C88EC),
-          size: 23,
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 15,
-            color: Color(0XFF3C88EC),
             fontWeight: FontWeight.bold,
           ),
         ),

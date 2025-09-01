@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import '../../../Class Models/feedback.dart';
 import '../../../Class Models/user.dart';
 import '../../homepage/drawer.dart';
 

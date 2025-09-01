@@ -249,8 +249,6 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
   }
 
   Widget _buildStatsSection() {
-    final dangerCount = alerts.where((a) => a.status == 'danger').length;
-    final safeCount = alerts.where((a) => a.status == 'safe').length;
     final totalNotified = alerts.fold<int>(0, (sum, alert) => sum + alert.notified);
 
     return SliverToBoxAdapter(

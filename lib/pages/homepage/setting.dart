@@ -1,10 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:resqmob/pages/homepage/homepage.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:math' as math;
-
 import '../../Class Models/user.dart';
 import '../../backend/gesture setup.dart';
 import '../homepage/drawer.dart';

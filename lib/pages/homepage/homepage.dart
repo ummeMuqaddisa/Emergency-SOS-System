@@ -17,21 +17,16 @@ import 'package:resqmob/backend/sms.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
 import 'package:resqmob/backend/permission%20handler/location%20services.dart';
 import 'package:resqmob/pages/alert%20listing/view%20active%20alerts.dart';
-import 'package:resqmob/pages/alert%20listing/view%20my%20alerts.dart';
 import 'package:resqmob/pages/safe%20map/safe%20road.dart';
 import 'package:resqmob/pages/profile/profile.dart';
-import 'package:resqmob/test.dart';
 import '../../Class Models/alert.dart';
 import '../../Class Models/pstation.dart';
 import '../../Class Models/user.dart';
-import '../../backend/firebase config/Authentication.dart';
 import 'package:resqmob/backend/api keys.dart';
 import '../../backend/firebase config/firebase message.dart';
-import '../../backend/gesture setup.dart';
 import '../../backend/widget_service.dart';
 import '../../modules/coordinate to location.dart';
 import '../../modules/distance.dart';
-import '../community/community.dart';
 import 'drawer.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -44,7 +39,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String? _widgetData;
 
   // Initial camera position
   static const CameraPosition _initialPosition = CameraPosition(
@@ -55,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
   GoogleMapController? _mapController;
   Position? _currentPosition;
   bool _isLoading = false;
-  final Set<Marker> _markers = {}; // Holds all markers for the map
+  final Set<Marker> _markers = {};
   StreamSubscription<Position>? _positionStream;
   StreamSubscription<RemoteMessage>? _notificationSub;
   StreamSubscription<DocumentSnapshot>? _alertListener;
@@ -1817,24 +1811,20 @@ getnavpoly()async{
 
           // Control Buttons
           Positioned(
-            bottom: 35,
+            bottom: 40,
             left: 16,
             child: Column(
               children: [
-                FloatingActionButton(
-                  backgroundColor: Colors.white,
-                  onPressed: (){
-                   sendSos(['01839228924'] , 'saif', 0, 0);
-
-
-
-
-
-                  },
-                  heroTag: "location_3",
-                  child: Text('Test'),
-                ),
-                const SizedBox(height: 8),
+                // FloatingActionButton(
+                //   backgroundColor: Colors.white,
+                //   onPressed: (){
+                //    sendSos(['01839228924'] , 'saif', 0, 0);
+                //
+                //   },
+                //   heroTag: "location_3",
+                //   child: Text('Test'),
+                // ),
+                // const SizedBox(height: 8),
                 FloatingActionButton(
                   mini: true,
                   backgroundColor: Colors.white,

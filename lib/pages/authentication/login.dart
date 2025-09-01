@@ -8,8 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:resqmob/pages/authentication/signup.dart';
 import '../../Class Models/user.dart';
-import '../../backend/firebase config/Authentication.dart';
-import '../../main.dart';
 import '../admin/admin home.dart';
 import '../homepage/homepage.dart';
 

@@ -5,8 +5,6 @@ import 'package:rxdart/rxdart.dart';
 import '../../Class Models/social model.dart';
 import '../../Class Models/user.dart';
 import 'dart:async';
-import 'package:intl/intl.dart';
-
 import '../homepage/drawer.dart';
 
 enum SortBy { hot, newest, top}
@@ -134,7 +132,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: AppDrawer(currentUser: widget.currentUser!,activePage: 2,),
+      drawer: AppDrawer(currentUser: widget.currentUser,activePage: 2,),
       backgroundColor: backgroundLight,
       body: RefreshIndicator(
         backgroundColor: Colors.white,
@@ -478,17 +476,6 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
     );
   }
 
-  Widget _buildActionIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: chipBackground,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Icon(icon, color: textLight, size: 20),
-    );
-  }
 
   Widget _buildPostsList() {
     if (_isLoading) {
@@ -1224,7 +1211,6 @@ class _RedditStyleCommentsBottomSheetState extends State<RedditStyleCommentsBott
   static const Color chipBackground = Color(0xFFF1F5F9);
   static const Color iconColor = Color(0xFF9CA3AF);
   static const Color upvoteColor = Color(0xFFFF4500);
-  static const Color awardColor = Color(0xFFFFD700);
 
   @override
   Widget build(BuildContext context) {

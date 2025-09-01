@@ -8,11 +8,9 @@ import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_ti
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
-
 import 'package:resqmob/pages/profile/profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../Class Models/user.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -3030,7 +3028,6 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
 
       final userData = userDoc.data()!;
       final status = alertData['status']?.toString().toLowerCase() ?? '';
-      final isDanger = status == 'danger';
 
       showDialog(
         context: context,
