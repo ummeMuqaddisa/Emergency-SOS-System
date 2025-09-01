@@ -272,14 +272,14 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
           children: [
             Row(
               children: [
-                _buildStatItem('Total Responded', '${alerts.length}', FontAwesomeIcons.solidBell, Colors.black),
+                _buildStatItem('Total Alert', '${alerts.length}', FontAwesomeIcons.solidBell, Colors.black),
                 Container(
                   width: 1,
                   height: 60,
                   color: const Color(0xFFE5E7EB),
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                _buildStatItem('Total Notified', '$totalNotified', FontAwesomeIcons.solidPaperPlane, Colors.black),
+                _buildStatItem('Through Notified', '$totalNotified', FontAwesomeIcons.solidPaperPlane, Colors.black),
               ],
             ),
           ],
@@ -735,7 +735,7 @@ class _AlertHistoryScreenState extends State<AlertHistoryScreen> with TickerProv
               color: Colors.black.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: Colors.black, size: 20),
+            child: Icon(icon, color: Colors.black, size: 20,weight: 1,),
           ),
           const SizedBox(width: 16),
           Expanded(

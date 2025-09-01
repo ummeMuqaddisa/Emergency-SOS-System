@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../Class Models/Danger zone.dart';
+
 /// Calculate distance between two coordinates using Haversine formula
 double haversineDistance(LatLng coord1, LatLng coord2) {
   const double R = 6371000; // Earth radius in meters
@@ -52,14 +54,7 @@ bool segmentIntersectsCircle(LatLng start, LatLng end, LatLng center, double rad
   return distance <= radius;
 }
 
-/// Calculate total distance of polyline
-double calculatePolylineDistance(List<LatLng> polyline) {
-  double total = 0;
-  for (int i = 0; i < polyline.length - 1; i++) {
-    total += haversineDistance(polyline[i], polyline[i + 1]);
-  }
-  return total;
-}
+
 
 /// Calculate safety percentage for a polyline with detailed analysis
 Map<String, dynamic> calculatePolylineSafety(List<LatLng> polyline, List<DangerZone> dangerZones) {
@@ -110,49 +105,14 @@ Map<String, dynamic> calculatePolylineSafety(List<LatLng> polyline, List<DangerZ
   };
 }
 
-/// DangerZone class
-class DangerZone {
-  final double lat;
-  final double lon;
-  final double radius;
-
-  const DangerZone({
-    required this.lat,
-    required this.lon,
-    required this.radius
-  });
-
-  @override
-  String toString() {
-    return 'DangerZone(lat: $lat, lon: $lon, radius: $radius)';
+/// Calculate total distance of polyline
+double calculatePolylineDistance(List<LatLng> polyline) {
+  double total = 0;
+  for (int i = 0; i < polyline.length - 1; i++) {
+    total += haversineDistance(polyline[i], polyline[i + 1]);
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is DangerZone &&
-        other.lat == lat &&
-        other.lon == lon &&
-        other.radius == radius;
-  }
-
-  @override
-  int get hashCode => lat.hashCode ^ lon.hashCode ^ radius.hashCode;
-
-  factory DangerZone.fromJson(Map<String, dynamic> json) {
-    return DangerZone(
-      lat: (json['lat'] as num).toDouble(),
-      lon: (json['lon'] as num).toDouble(),
-      radius: (json['radius'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'lat': lat,
-      'lon': lon,
-      'radius': radius,
-    };
-  }
+  return total;
 }
+
+
 

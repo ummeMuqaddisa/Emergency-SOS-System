@@ -220,6 +220,17 @@ getnavpoly()async{
         _navigationDestination!,
       );
     }
+    final marker = Marker(
+      markerId: MarkerId(DateTime.now().toString()),
+      position: LatLng(widget.navlat,  widget.navlng),
+      icon:BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueAzure),
+      onTap: null,
+    );
+    _markers.add(marker);
+    setState(() {
+
+    });
 }
   //home widget init
   void _handleWidgetData(String data) {
@@ -381,45 +392,50 @@ getnavpoly()async{
         .listen((querySnapshot) {
       if (!mounted) return;
 
-      Set<Marker> updatedMarkers = {};
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final docId = doc.id;
+      setState(() {
+        for (var change in querySnapshot.docChanges) {
+          final doc = change.doc;
+          final data = doc.data() as Map<String, dynamic>?;
+          final docId = doc.id;
 
-        if (docId == currentUserId ||
-            !data.containsKey('location') ||
-            data['location'] == null ||
-            data['admin'] == true ||
-            data['status'] == 'safe' ||
-            data['userId'] == currentUserId) {
-          continue;
+          if (data == null ||
+              docId == currentUserId ||
+              !data.containsKey('location') ||
+              data['location'] == null ||
+              data['admin'] == true ||
+              data['status'] == 'safe' ||
+              data['userId'] == currentUserId) {
+            _markers.removeWhere((m) => m.markerId.value == docId);
+            continue;
+          }
+
+          final location = data['location'];
+          final latitude = location['latitude'];
+          final longitude = location['longitude'];
+
+          if (latitude != null && longitude != null) {
+            final marker = Marker(
+              markerId: MarkerId(docId),
+              position: LatLng(latitude, longitude),
+              icon: data['severity'] == 1
+                  ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow)
+                  : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+              onTap: () {
+                _showNavigationBottomSheet(LatLng(latitude, longitude), data);
+              },
+            );
+
+            if (change.type == DocumentChangeType.added ||
+                change.type == DocumentChangeType.modified) {
+              // update or insert marker
+              _markers.removeWhere((m) => m.markerId.value == docId);
+              _markers.add(marker);
+            } else if (change.type == DocumentChangeType.removed) {
+              _markers.removeWhere((m) => m.markerId.value == docId);
+            }
+          }
         }
-
-        final location = data['location'];
-        final latitude = location['latitude'];
-        final longitude = location['longitude'];
-
-        if (latitude != null && longitude != null) {
-          final marker = Marker(
-            markerId: MarkerId(docId),
-            position: LatLng(latitude, longitude),
-            icon:data['severity']==1? BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueYellow): BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRose,),
-            onTap: () {
-              _showNavigationBottomSheet(LatLng(latitude, longitude), data);
-            },
-          );
-          updatedMarkers.add(marker);
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _markers.clear();
-          _markers.addAll(updatedMarkers);
-        });
-      }
+      });
     }, onError: (e) {
       debugPrint("Marker listener error: $e");
     });
@@ -1012,6 +1028,7 @@ getnavpoly()async{
         phoneNumbers.add(contact.phoneNumber);
       }
       // sendSos(phoneNumbers, '${user.name}', _currentPosition!.latitude, _currentPosition!.longitude);
+
       print('sos sent to emergency contacts');
 
       // Police station
@@ -1523,7 +1540,9 @@ getnavpoly()async{
 
     ];
     return Scaffold(
-      backgroundColor: isDanger? Color(0xFFFFC5C5): Colors.white,
+      backgroundColor: isDanger? (_currentIndex!=3?(_currentIndex==1?Color(0xFFEBE3CD):Color(
+          0xFFFFFFFF)):Color(0xFFFFC5C5)): (_currentIndex==1?Color(0xFFEBE3CD):Color(
+          0xFFFFFFFF)),
       drawer: AppDrawer(
         activePage: 1,
         currentUser: currentUser,

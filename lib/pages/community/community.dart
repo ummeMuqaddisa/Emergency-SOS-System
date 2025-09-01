@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../Class Models/social model.dart';
 import '../../Class Models/user.dart';
@@ -38,7 +39,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
 
   // White theme color palette
   static const Color primaryRed = Color(0xFFEF4444);
-  static const Color primaryBlue = Color(0xFF3B82F6);
+  static const Color primaryBlue = Color(0xFF1F2937);
   static const Color textDark = Color(0xFF1F2937);
   static const Color textMedium = Color(0xFF374151);
   static const Color textLight = Color(0xFF6B7280);
@@ -428,11 +429,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
                   ),
                 ),
               ),
-              if (!_isPostExpanded) ...[
-                const SizedBox(width: 12),
-                _buildActionIcon(Icons.image_outlined),
 
-              ],
             ],
           ),
           if (_isPostExpanded) ...[
@@ -525,8 +522,8 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
                   color: chipBackground,
                   borderRadius: BorderRadius.circular(60),
                 ),
-                child: const Icon(
-                  Icons.language,
+                child: HugeIcon(
+                  icon:HugeIcons.strokeRoundedUserGroup03,
                   size: 60,
                   color: iconColor,
                 ),
@@ -656,7 +653,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
             color: Colors.black.withOpacity(0.1),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Icon(Icons.language, color: Colors.black, size: 12),
+          child: HugeIcon(icon:HugeIcons.strokeRoundedUserGroup03, color: Colors.black, size: 18),
         ),
         const SizedBox(width: 8),
         const Text(
@@ -1681,7 +1678,10 @@ class _RedditStyleCommentsBottomSheetState extends State<RedditStyleCommentsBott
                   ),
                   maxLines: 3,
                   minLines: 1,
-                  onSubmitted: (_) => _createComment(),
+                  onTap: ()async{
+                    await _createComment();
+                  },
+
                 ),
               ),
               const SizedBox(width: 12),

@@ -645,9 +645,6 @@ class _RespondedAlertsScreenState extends State<RespondedAlertsScreen> with Tick
                   _buildDetailSection('From', alert.userName, Icons.person_outline),
                   const SizedBox(height: 16),
 
-                  _buildDetailSection('Phone', alert.userPhone, Icons.phone_outlined),
-                  const SizedBox(height: 16),
-
                   if (alert.message != null && alert.message!.isNotEmpty) ...[
                     _buildDetailSection('Message', alert.message!, Icons.message_outlined),
                     const SizedBox(height: 20),

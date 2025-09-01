@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:resqmob/backend/api%20keys.dart';
 import 'package:resqmob/pages/safe%20map/safety%20module.dart';
+import '../../Class Models/Danger zone.dart';
 import '../../Class Models/user.dart';
 import '../homepage/drawer.dart';
 
@@ -60,7 +61,7 @@ class _SafetyMapState extends State<SafetyMap> with TickerProviderStateMixin {
   // Professional color scheme
   static const Color primaryColor = Color(0xff25282b);
   static const Color secondaryColor = Color(0xFF059669);
-  static const Color surfaceColor = Color(0xFFFAFAFA);
+  static const Color surfaceColor = Color(0xFFD5C4A1);
   static const Color errorColor = Color(0xFFDC2626);
   static const Color warningColor = Color(0xFFF59E0B);
 
