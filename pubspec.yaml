@@ -67,6 +67,7 @@ dependencies:
   home_widget:
   font_awesome_flutter: ^10.9.0
   hugeicons:
+  android_intent_plus: ^5.3.1
 
 
 
