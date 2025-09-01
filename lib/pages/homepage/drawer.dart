@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // Please add the correct dependency to your pubspec.yaml file.
 import 'package:hugeicons/hugeicons.dart';
 import 'package:resqmob/Class%20Models/social%20model.dart';
+import 'package:resqmob/pages/homepage/setting.dart';
 import 'package:resqmob/pages/safe%20map/safe%20road.dart';
 import 'package:resqmob/pages/profile/profile.dart';
 
@@ -28,13 +29,13 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       shape: const LinearBorder(),
-      width: 350,
+      width: 340,
       backgroundColor: Colors.white,
       child: ListView(
         children: [
 
           // User Profile Header
-          const SizedBox(height: 40),
+          const SizedBox(height:20),
           InkWell(
             onTap: () {
               Navigator.push(
@@ -44,7 +45,7 @@ class AppDrawer extends StatelessWidget {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Row(
                 children: [
                   CircleAvatar(
@@ -87,7 +88,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 30),
           const Divider(height: 10),
           const SizedBox(height: 5),
 
@@ -177,34 +178,38 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.only(left: 5),
-            margin: const EdgeInsets.only(right: 15),
-            child: ListTile(
-              leading: HugeIcon(
-                icon: HugeIcons.strokeRoundedSettings02,
-                color: Colors.black.withOpacity(0.4),
-                size: 23,
-              ),
-              title: Text(
-                'Settings',
-                style: TextStyle(
-                  fontSize: 15,
-                  color:Colors.black.withOpacity(0.4),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onTap:null,
-            ),
-          ),
-          // _buildDrawerItem(
-          //   icon: HugeIcons.strokeRoundedSettings02,
-          //   title: 'Settings',
-          //   onTap: () {
-          //     Navigator.pop(context);
-          //     // Navigate to settings screen
-          //   },
+          // Container(
+          //   padding: const EdgeInsets.only(left: 5),
+          //   margin: const EdgeInsets.only(right: 15),
+          //   child: ListTile(
+          //     leading: HugeIcon(
+          //       icon: HugeIcons.strokeRoundedSettings02,
+          //       color: Colors.black.withOpacity(0.4),
+          //       size: 23,
+          //     ),
+          //     title: Text(
+          //       'Settings',
+          //       style: TextStyle(
+          //         fontSize: 15,
+          //         color:Colors.black.withOpacity(0.4),
+          //         fontWeight: FontWeight.bold,
+          //       ),
+          //     ),
+          //     onTap:null,
+          //   ),
           // ),
+          _buildDrawerItem(
+            isSelected: activePage==7?true:false,
+            icon: HugeIcons.strokeRoundedSettings02,
+            title: 'Settings',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Setting(currentUser: currentUser,)),
+              );
+            },
+          ),
           _buildDrawerItem(
             icon: HugeIcons.strokeRoundedHelpSquare,
             title: 'Help & Tutorial',
@@ -258,7 +263,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Version 1.2.22',
+                  'Version 1.2.23',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black54,

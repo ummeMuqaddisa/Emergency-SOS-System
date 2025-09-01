@@ -251,96 +251,105 @@ class _signupState extends State<signup> {
                 SizedBox(height: 30),
 
                 // Name Field
-                TextField(
-                  controller: name,
-                  decoration: InputDecoration(
-                    labelText: "Name",
-                    hintText: "Enter your full name",
-                    prefixIcon: Icon(Icons.person_outline,  color: Colors.black,),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                ConstrainedBox(
+                  constraints:  BoxConstraints(maxWidth: 700),
+                  child: TextField(
+                    controller: name,
+                    decoration: InputDecoration(
+                      labelText: "Name",
+                      hintText: "Enter your full name",
+                      prefixIcon: Icon(Icons.person_outline,  color: Colors.black,),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide( color: Colors.black, width: 2),
+                      ),
+                      floatingLabelStyle: TextStyle( color: Colors.black,),
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide( color: Colors.black, width: 2),
-                    ),
-                    floatingLabelStyle: TextStyle( color: Colors.black,),
-                    contentPadding: EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
                 SizedBox(height: 20),
 
                 // Email Field
-                TextField(
-                  controller: email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: "Email",
-                    hintText: "Enter your email address",
-                    prefixIcon: Icon(Icons.email_outlined,  color: Colors.black,),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                ConstrainedBox(
+                  constraints:  BoxConstraints(maxWidth: 700),
+                  child: TextField(
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      hintText: "Enter your email address",
+                      prefixIcon: Icon(Icons.email_outlined,  color: Colors.black,),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide( color: Colors.black, width: 2),
+                      ),
+                      floatingLabelStyle: TextStyle( color: Colors.black,),
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide( color: Colors.black, width: 2),
-                    ),
-                    floatingLabelStyle: TextStyle( color: Colors.black,),
-                    contentPadding: EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
                 SizedBox(height: 20),
 
                 // Password Field
-                TextField(
-                  controller: password,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: "Password",
-                    hintText: "Create a password",
-                    prefixIcon: Icon(Icons.lock_outline,  color: Colors.black,),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.black,
+                ConstrainedBox(
+                  constraints:  BoxConstraints(maxWidth: 700),
+                  child: TextField(
+                    controller: password,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      hintText: "Create a password",
+                      prefixIcon: Icon(Icons.lock_outline,  color: Colors.black,),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.black,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide( color: Colors.black, width: 2),
+                      ),
+                      floatingLabelStyle: TextStyle( color: Colors.black,),
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide( color: Colors.black, width: 2),
-                    ),
-                    floatingLabelStyle: TextStyle( color: Colors.black,),
-                    contentPadding: EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
                 SizedBox(height: 30),
 
                 // Sign Up Button
                 SizedBox(
-                  width: double.infinity,
+                  width: 500,
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(

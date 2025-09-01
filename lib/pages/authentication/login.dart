@@ -257,62 +257,68 @@ class _loginState extends State<login> {
                   ),
                   SizedBox(height: 40),
                   // Email field
-                  TextField(
-                    controller: email,
-                    decoration: InputDecoration(
-                      labelText: "Username",
-                      hintText: "Enter Username",
-                      prefixIcon: Icon(Icons.person_outline, color: Colors.black,),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                  ConstrainedBox(
+                    constraints:  BoxConstraints(maxWidth: 700),
+                    child: TextField(
+                      controller: email,
+                      decoration: InputDecoration(
+                        labelText: "Username",
+                        hintText: "Enter Username",
+                        prefixIcon: Icon(Icons.person_outline, color: Colors.black,),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.black, width: 2),
+                        ),
+                        floatingLabelStyle: TextStyle(color: Colors.black,),
+                        contentPadding: EdgeInsets.symmetric(vertical: 16),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.black, width: 2),
-                      ),
-                      floatingLabelStyle: TextStyle(color: Colors.black,),
-                      contentPadding: EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                   SizedBox(height: 20),
                   // Password field
-                  TextField(
-                    controller: password,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      hintText: "Enter Password",
-                      prefixIcon: Icon(Icons.lock_outline, color: Colors.black,),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.black,
+                  ConstrainedBox(
+                    constraints:  BoxConstraints(maxWidth: 700),
+                    child: TextField(
+                      controller: password,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: "Password",
+                        hintText: "Enter Password",
+                        prefixIcon: Icon(Icons.lock_outline, color: Colors.black,),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.black,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.black, width: 2),
+                        ),
+                        floatingLabelStyle: TextStyle(color: Colors.black,),
+                        contentPadding: EdgeInsets.symmetric(vertical: 16),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.black, width: 2),
-                      ),
-                      floatingLabelStyle: TextStyle(color: Colors.black,),
-                      contentPadding: EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                   // SizedBox(height: 16),
@@ -335,44 +341,47 @@ class _loginState extends State<login> {
                   SizedBox(height: 24),
                   // Login button
                   SizedBox(
-                    width: double.infinity,
+                    width: 500,
                     height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xff25282b),
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    child: ConstrainedBox(
+                      constraints:  BoxConstraints(maxWidth: 400),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xff25282b),
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
-                      ),
-                      onPressed: () async {
-                        setState(() {
-                          loading = true;
-                          btn_text = "Logging in...";
-                        });
-
-                        isloading = await signin(
-                            email: email.text.trim(),
-                            password: password.text,
-                            context: context
-                        );
-
-                        if (!isloading) {
-                          Timer(Duration(milliseconds: 50), () {
-                            setState(() {
-                              loading = false;
-                              btn_text = "Log in";
-                            });
+                        onPressed: () async {
+                          setState(() {
+                            loading = true;
+                            btn_text = "Logging in...";
                           });
-                        }
-                      },
-                      child: Text(
-                        btn_text,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+
+                          isloading = await signin(
+                              email: email.text.trim(),
+                              password: password.text,
+                              context: context
+                          );
+
+                          if (!isloading) {
+                            Timer(Duration(milliseconds: 50), () {
+                              setState(() {
+                                loading = false;
+                                btn_text = "Log in";
+                              });
+                            });
+                          }
+                        },
+                        child: Text(
+                          btn_text,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
