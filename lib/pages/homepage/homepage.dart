@@ -27,6 +27,7 @@ import '../../Class Models/user.dart';
 import '../../backend/firebase config/Authentication.dart';
 import 'package:resqmob/backend/api keys.dart';
 import '../../backend/firebase config/firebase message.dart';
+import '../../backend/gesture setup.dart';
 import '../../backend/widget_service.dart';
 import '../../modules/coordinate to location.dart';
 import '../../modules/distance.dart';
@@ -471,7 +472,7 @@ getnavpoly()async{
       destination.longitude,
     );
 
-    if (distance < 5) { // You can tune this threshold
+    if (distance < 20) { // You can tune this threshold
       setState(() {
         _navigationDestination = null;
         _polylines.clear();
@@ -957,7 +958,16 @@ getnavpoly()async{
     }
     final data = await FirebaseFirestore.instance.collection('Users').doc(FirebaseAuth.instance.currentUser?.uid).get();
     UserModel user = UserModel.fromJson(data.data()!);
-    final length = await FirebaseFirestore.instance.collection('Alerts').get().then((value) => value.docs.length + 10);
+
+    final snapshotcount = await FirebaseFirestore.instance
+        .collection('Alerts')
+        .count()
+        .get();
+    int length = snapshotcount.count!;
+    print(length);
+    length= length+15;
+    print(length);
+
     String address = await getAddressFromLatLng(_currentPosition!.latitude, _currentPosition!.longitude);
 
     final alert = AlertModel(
@@ -1814,7 +1824,10 @@ getnavpoly()async{
                 FloatingActionButton(
                   backgroundColor: Colors.white,
                   onPressed: (){
-                    sendSos(['01839228924'] , 'saif', 0, 0);
+                   sendSos(['01839228924'] , 'saif', 0, 0);
+
+
+
 
 
                   },
@@ -1918,6 +1931,9 @@ getnavpoly()async{
                       .update({
                     "isInDanger": false,
                   });
+                  setState(() {
+                    isDanger = false;
+                  });
 
                   final alertSnapshot = await FirebaseFirestore.instance
                       .collection('Alerts')
@@ -1945,9 +1961,7 @@ getnavpoly()async{
                     });
                   }
 
-                  setState(() {
-                    isDanger = false;
-                  });
+
 
                   // Temp community post delete
                   String postId = alertSnapshot.docs.first.id;
@@ -2006,7 +2020,7 @@ getnavpoly()async{
       ),
       floatingActionButton: _currentIndex == 3
           ?( !isBanned? FloatingActionButton.large(
-        backgroundColor: Colors.red,
+        backgroundColor: Color(0xffe04c6c),
         elevation: 0,
         onPressed: () {
           AlertSystem(context);
@@ -2050,7 +2064,7 @@ getnavpoly()async{
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       ) )
           : FloatingActionButton(
-        backgroundColor: Colors.red,
+        backgroundColor: Color(0xffe04c6c),
         elevation: 0,
         onPressed: () {
           setState(() {

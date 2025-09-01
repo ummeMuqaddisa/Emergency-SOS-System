@@ -385,12 +385,12 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: primaryRed.withOpacity(0.1),
+                backgroundColor: primaryBlue.withOpacity(0.1),
                 backgroundImage: widget.currentUser.profileImageUrl.isNotEmpty
                     ? NetworkImage(widget.currentUser.profileImageUrl)
                     : null,
                 child: widget.currentUser.profileImageUrl.isEmpty
-                    ? Icon(Icons.person, color: primaryRed, size: 24)
+                    ? Icon(Icons.person, color: primaryBlue, size: 24)
                     : null,
               ),
               const SizedBox(width: 16),
@@ -497,7 +497,7 @@ class _SocialScreenState extends State<SocialScreen> with WidgetsBindingObserver
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: primaryRed),
+              CircularProgressIndicator(color: primaryBlue),
               SizedBox(height: 16),
               Text(
                 'Loading posts...',

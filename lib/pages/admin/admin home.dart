@@ -25,6 +25,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   final List<Marker> _markers = [];
   LatLng? _currentPosition;
   late final MapController _mapController;
+  TextEditingController replycontroller = TextEditingController();
   bool _isLoading = true;
   String? _errorMessage;
   StreamSubscription<Position>? _positionStream;
@@ -2232,10 +2233,18 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                   child: Container(),
                 ),
                 const SizedBox(width: 8),
+                Expanded(
+                  child: Container(),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(),
+                ),
+                const SizedBox(width: 8),
                 // Reply Button
                 Expanded(
                   child: InkWell(
-                    onTap: () => _replyToFeedback(feedback),
+                    onTap: () => _replyToFeedback(userEmail,feedback),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -2281,14 +2290,15 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   }
 
 // Helper method to send email
-  Future<void> _sendEmailToUser(String userEmail, Map<String, dynamic> feedback) async {
+  Future<void> _sendEmailToUser(String userEmail, Map<String, dynamic> feedback, String message) async {
     try {
       final subject = Uri.encodeComponent('Re: Your Feedback (ID: ${feedback['id']})');
       final body = Uri.encodeComponent(
           'Dear User,\n\n'
               'Thank you for your feedback:\n'
               '"${feedback['message']}"\n\n'
-              'We appreciate your input and will get back to you soon.\n\n'
+              'Reply From Admin:\n$message.\n\n'
+              'We appreciate your input and we appreciate your contribution.\n\n'
               'Best regards,\n'
               'Admin Team'
       );
@@ -2319,7 +2329,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
     }
   }
 // Helper method to reply to feedback
-  void _replyToFeedback(Map<String, dynamic> feedback) {
+  void _replyToFeedback(String userEmail,Map<String, dynamic> feedback) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -2341,6 +2351,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: replycontroller,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: 'Type your reply here...',
@@ -2355,9 +2366,18 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor:  Color(0xFF3B82F6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16,horizontal: 27),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
             onPressed: () {
               Navigator.pop(context);
-              _sendEmailToUser('saifislamofficial@gmail.com', feedback);
+              _sendEmailToUser(userEmail, feedback,replycontroller.text);
             },
             child: const Text('Send Reply'),
           ),
@@ -3900,9 +3920,16 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
               ],
             ),
           ),
-
+          _isLoading?Expanded(
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Colors.black,
+                strokeWidth: 3,
+              ),
+            ),
+          ):
           // Main Content Area
-          Expanded(
+           Expanded(
             child: Column(
               children: [
                 // Top Header
@@ -4313,7 +4340,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                             child: _buildControlButton(
                               'Hospitals',
                               Icons.local_hospital_rounded,
-                              const Color(0xFF78120C),
+                              const Color(0xFF2196F3),
                               _currentView == 'hospitals',
                               _loadAllHospitalMarkers,
                             ),
@@ -4424,8 +4451,7 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                           const SizedBox(height: 12),
                           _buildStatCard('Police Stations', _totalStations, Icons.local_police, const Color(0xFF2196F3)),
                           const SizedBox(height: 12),
-                          _buildStatCard('Total Hospitals', _totalHospitals, Icons.local_hospital_rounded, const Color(
-                              0xFF78120C)),
+                          _buildStatCard('Total Hospitals', _totalHospitals, Icons.local_hospital_rounded, const Color(0xFF2196F3)),
                           const SizedBox(height: 12),
                           _buildStatCard('Total Alerts', _totalAlerts, Icons.warning, const Color(0xFFFF9800)),
                           const SizedBox(height: 12),
@@ -4698,7 +4724,10 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
           children: [
             TileLayer(
               tileProvider: CancellableNetworkTileProvider(),
-              urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              urlTemplate: "https://cartodb-basemaps-a.global.ssl.fastly.net/{variant}/{z}/{x}/{y}.png",
+              additionalOptions: {
+                'variant': 'light_all', // or dark_all, voyager, voyager_nolabels
+              },
               userAgentPackageName: 'com.example.resqmob',
             ),
             // Pulse circles for active alerts

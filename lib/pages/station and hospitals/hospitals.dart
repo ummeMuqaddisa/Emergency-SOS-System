@@ -650,11 +650,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Icon(
-            Icons.phone,
-            size: 14,
-            color: Colors.black,
-          ),
+
         ],
       ),
     );

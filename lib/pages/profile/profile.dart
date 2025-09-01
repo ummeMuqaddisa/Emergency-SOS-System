@@ -66,7 +66,9 @@ class _profileState extends State<profile> {
         });
         setState(() => isEditing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
+          const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('Profile updated successfully')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
