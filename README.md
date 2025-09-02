@@ -83,8 +83,8 @@ Unlike traditional SOS apps, ResQMob not only sends alerts but also:
 | **Frontend**       | Flutter (Cross-platform UI) |
 | **Backend**        | Firebase Cloud Functions (Node.js/TypeScript) |
 | **Databases**      | Firebase Firestore (NoSQL) |
-| **Authentication** | Supabase Auth |
-| **Storage**        | Firebase / Supabase Storage |
+| **Authentication** | Firebase Auth |
+| **Storage**        | Firebase  |
 | **Notifications**  | Firebase Cloud Messaging (FCM) |
 | **APIs**           | HTTP (Amar Sheba SMS API, Google Maps API) |
 
