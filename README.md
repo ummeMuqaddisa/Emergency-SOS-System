@@ -1,6 +1,6 @@
 # 🚨 ResQMob – Emergency SOS System  
 
-ResQMob is an **emergency-based community safety mobile application** built with **Flutter, Firebase, and Supabase**.  
+ResQMob is an **emergency-based community safety mobile application** built with **Flutter, Firebase**.  
 It enables users to send **instant SOS alerts**, connect with **police stations & responders**, share **real-time locations**, and build a **safety-focused community network** with posts, comments, and feedback.  
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)](https://flutter.dev)
