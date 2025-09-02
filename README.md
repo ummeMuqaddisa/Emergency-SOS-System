@@ -188,13 +188,22 @@ Main collections & relations:
 
 ## 📸 Screenshots & Demo
 
-  ![](https://github.com/XhAfAn1/Emergency-SOS-System/blob/main/Screens%20Shoots/a4vmo8.gif)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/XhAfAn1/Emergency-SOS-System/main/Screens%20Shoots/a4vmo8.gif" width="250" />
+  <img src="https://raw.githubusercontent.com/XhAfAn1/Emergency-SOS-System/main/Screens%20Shoots/home.png" width="250" />
+  <img src="https://raw.githubusercontent.com/XhAfAn1/Emergency-SOS-System/main/Screens%20Shoots/map.png" width="250" />
+</p>
+
+| Home Screen | Emergency Alert | Map View |
+|-------------|-----------------|----------|
+| ![](https://raw.githubusercontent.com/XhAfAn1/Emergency-SOS-System/main/Screens%20Shoots/home.png) | ![](https://raw.githubusercontent.com/XhAfAn1/Emergency-SOS-System/main/Screens%20Shoots/alert.png) | ![](https://raw.githubusercontent.com/XhAfAn1/Emergency-SOS-System/main/Screens%20Shoots/map.png) |
 
 - **Home Screen** – Quick access to SOS  
 - **Emergency Alert Screen** – Send & track alerts  
 - **Community Feed** – Posts & comments  
 - **Map View** – Safe/Danger zones  
 - **Feedback Form** – Rate and review responses  
+
 
 ---
 
