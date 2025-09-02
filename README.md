@@ -2,6 +2,7 @@
 
 ResQMob is an **emergency-based community safety mobile application** built with **Flutter, Firebase**.  
 It enables users to send **instant SOS alerts**, connect with **police stations & responders**, share **real-time locations**, and build a **safety-focused community network** with posts, comments, and feedback.  
+- [Software Requirements Specification (SRS) Document](https://docs.google.com/document/d/19gcjcngLF-31X7Z2wkDsr3Re4yf7YYc27nmb0AaIvEs/edit?tab=t.p4mijk2jvot7)
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue?logo=dart)](https://dart.dev)
@@ -187,9 +188,7 @@ Main collections & relations:
 
 ## 📸 Screenshots & Demo
 
-| Home Screen | SOS Trigger | Location Sharing |
-|-------------|-------------|------------------|
-| ![s1](docs/screenshots/home.png) | ![s2](docs/screenshots/sos.png) | ![s3](docs/screenshots/location.png) |
+  ![](https://github.com/XhAfAn1/Emergency-SOS-System/blob/main/Screens%20Shoots/a4vmo8.gif)
 
 - **Home Screen** – Quick access to SOS  
 - **Emergency Alert Screen** – Send & track alerts  
