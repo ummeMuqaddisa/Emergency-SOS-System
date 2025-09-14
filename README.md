@@ -111,8 +111,8 @@ Unlike traditional SOS apps, ResQMob not only sends alerts but also:
         │                                                           │
         │ ───────────────────────────────────────────────────────── │
         │ - SOS Alert Handler                                       │
-        │ - User/Auth Management (Firebase)                         │
-        │ - Post/Comment Services                                   │
+        │ - User/ Auth Management (Firebase)                         │
+        │ - Post/ Comment Services                                   │
         │ - Notification Service (FCM)                              │
         │ - SMS Gateway Integration (Amar Sheba API)                │
         │ - ML Danger Prediction Service                            │
